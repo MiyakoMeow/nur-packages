@@ -62,10 +62,6 @@ jobs:
       - name: Check evaluation
         run: |
           nix-env -f . -qa \* --meta --xml \
-            --allowed-uris https://static.rust-lang.org \
-            --allowed-uris git+https://github.com \
-            --allowed-uris https://github.com \
-            --option restrict-eval true \
             --option allow-import-from-derivation true \
             --drv-path --show-trace \
             -I nixpkgs=$(nix-instantiate --find-file nixpkgs) \
