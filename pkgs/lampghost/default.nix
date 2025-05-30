@@ -55,7 +55,7 @@
 
     # 关键配置：完全离线构建
     npmDeps = fetchNpmDeps {
-      src = builtins.path {path = "${src}/frontend";};
+      src = "${src.outPath}/frontend";
       hash = "sha256-vkehRGSud7rm0J2FNfepO72RCQxHHN3ageyrAxpOIgE="; # 首次构建后替换
     };
 
