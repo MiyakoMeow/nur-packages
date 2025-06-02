@@ -37,13 +37,12 @@ in
     # 核心修正：明确安装到$out
     installPhase = ''
       mkdir -p $out/share/grub/themes
-      tar -xzf ${src} -C $out/share/grub/themes --strip-components=0
+      tar -xzf ${src} -C $out --strip-components=1
       # 验证关键文件存在
-      if [ ! -f "$out/share/grub/themes/${characterDiff}/theme.txt" ]; then
+      if [ ! -f "$out/theme.txt" ]; then
         echo "ERROR: theme.txt not found in $out!"
         exit 1
       fi
-      echo "theme.txt found in $out!"
     '';
 
     # 禁用自动解压步骤
