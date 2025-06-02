@@ -2,7 +2,8 @@
 {
   pkgs,
   fetchurl,
-  tag ? "v2.0.4",
+  nix-update-script,
+  tag ? "20250524-070052",
   characterDiff ? "Firefly_cn", # 角色差分
   useGHProxy ? false, # 可选参数：是否使用镜像
 }:
@@ -52,5 +53,9 @@ in
     # 暴露路径给其他模块使用
     passthru = {
       themeRelPath = "share/grub/themes/${characterDiff}";
+
+      updateScript =
+        nix-update-script {
+        };
     };
   }
