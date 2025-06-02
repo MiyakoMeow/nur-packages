@@ -19,7 +19,5 @@
 
   free-download-manager = pkgs.callPackage ./pkgs/free-download-manager {};
 
-  grub-theme-honkai-star-rail = pkgs.callPackage ./pkgs/grub-theme-honkai-star-rail {};
-
   # lampghost = pkgs.callPackage ./pkgs/lampghost {};
 }
