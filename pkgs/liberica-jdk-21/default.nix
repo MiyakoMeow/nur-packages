@@ -5,6 +5,13 @@
   autoPatchelfHook,
   makeWrapper,
   addToPath ? false, # 是否注册命令行可执行文件
+  # 导入依赖
+  libz,
+  xorg,
+  alsa-lib,
+  libXrender,
+  libXi,
+  libXtst,
 }: let
   # JDK 版本配置
   version = "21.0.7+9";
@@ -52,6 +59,16 @@ in
       ++ lib.optionals addToPath [
         makeWrapper
       ];
+
+    buildInputs = lib.optionals stdenv.isLinux [
+      libz
+      alsa-lib # 解决 libasound.so.2 依赖
+      xorg.libX11 # 解决 libX11.so.6 依赖
+      xorg.libXext # 解决 libXext.so.6 依赖
+      libXrender # 解决 libXrender.so.1 依赖
+      libXi # 解决 libXi.so.6 依赖
+      libXtst # 解决 libXtst.so.6 依赖
+    ];
 
     # 无需配置和构建步骤
     dontConfigure = true;
