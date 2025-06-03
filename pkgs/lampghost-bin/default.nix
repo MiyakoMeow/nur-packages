@@ -7,7 +7,16 @@
   copyDesktopItems,
   # Dep
   wine,
+  zlib,
   unzip,
+  gtk3,
+  webkitgtk_4_1,
+  glib,
+  gdk-pixbuf,
+  libsoup_3,
+  cairo,
+  pango,
+  atk,
 }: let
   version = "0.2.2.1";
 
@@ -60,7 +69,8 @@ in
     nativeBuildInputs =
       []
       ++ lib.optionals stdenv.isLinux [autoPatchelfHook copyDesktopItems]
-      ++ lib.optionals stdenv.isDarwin [unzip];
+      ++ lib.optionals stdenv.isDarwin [unzip]
+      ++ lib.optionals (platform == "x86_64-windows") [wine];
 
     desktopItems = lib.optionals stdenv.isLinux [desktopItem];
 
@@ -113,9 +123,21 @@ in
     '';
 
     # Linux 二进制可能需要修复
-    buildInputs =
-      lib.optionals stdenv.isLinux [
-      ];
+    buildInputs = lib.optionals stdenv.isLinux [
+      # 基础依赖
+      stdenv.cc.cc.lib
+      zlib
+      # GTK 相关依赖
+      gtk3
+      glib
+      gdk-pixbuf
+      cairo
+      pango
+      atk
+      # WebKitGTK 相关依赖
+      webkitgtk_4_1
+      libsoup_3
+    ];
 
     meta = with lib; {
       description = "Offline & Cross-platform beatoraja lamp viewer and more";
