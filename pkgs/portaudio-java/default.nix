@@ -81,6 +81,5 @@ in
       description = "Java wrapper for PortAudio audio library";
       homepage = "https://github.com/philburk/portaudio-java";
       license = licenses.mit;
-      platforms = platforms.all;
     };
   }

@@ -197,7 +197,6 @@ in
       description = "A modern BMS Player";
       homepage = "https://www.mocha-repository.info/download.php";
       license = licenses.gpl3;
-      platforms = platforms.all;
       mainProgram = "beatoraja";
     };
   }
