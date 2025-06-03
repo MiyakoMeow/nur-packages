@@ -21,4 +21,5 @@
   liberica-jdk-21 = pkgs.callPackage ./pkgs/liberica-jdk-21 {};
 
   # lampghost = pkgs.callPackage ./pkgs/lampghost {};
+  lampghost-bin = pkgs.callPackage ./pkgs/lampghost-bin {};
 }
