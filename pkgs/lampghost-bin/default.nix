@@ -5,6 +5,7 @@
   autoPatchelfHook,
   makeDesktopItem,
   copyDesktopItems,
+  nix-update-script,
   # Dep
   wine,
   zlib,
@@ -51,8 +52,8 @@
     name = "lampghost";
     exec = "lampghost";
     icon = "lampghost";
-    comment = "Lampghost application";
-    desktopName = "Lampghost";
+    comment = "Offline & Cross-platform beatoraja lamp viewer and more";
+    desktopName = "lampghost";
     categories = ["Utility"];
     startupNotify = false;
   };
@@ -138,6 +139,12 @@ in
       webkitgtk_4_1
       libsoup_3
     ];
+
+    passthru = {
+      updateScript =
+        nix-update-script {
+        };
+    };
 
     meta = with lib; {
       description = "Offline & Cross-platform beatoraja lamp viewer and more";
