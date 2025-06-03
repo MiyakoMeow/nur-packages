@@ -19,5 +19,5 @@
 
   free-download-manager = pkgs.callPackage ./pkgs/free-download-manager {};
 
-  # lampghost = pkgs.callPackage ./pkgs/lampghost {};
+  lampghost = pkgs.callPackage ./pkgs/lampghost {};
 }
