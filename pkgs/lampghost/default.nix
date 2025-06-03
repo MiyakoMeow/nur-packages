@@ -37,7 +37,7 @@
     homepage = "https://github.com/Catizard/lampghost";
     changelog = "https://github.com/Catizard/lampghost/releases/tag/v${version}";
     license = licenses.asl20;
-    maintainers = with maintainers; [MiyakoMeow];
+    maintainers = [];
     platforms = platforms.linux;
   };
 
