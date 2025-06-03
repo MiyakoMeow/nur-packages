@@ -15,20 +15,20 @@
   srcs = {
     "x86_64-linux" = {
       url = "https://github.com/Catizard/lampghost/releases/download/v${version}/lampghost_linux";
-      sha256 = "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b";
+      sha256 = "763e3aa4827df09981b2e071876269015ee21b6e1e46c2166b14a58074bd380c";
       type = "file";
       executable = true;
     };
 
     "x86_64-darwin" = {
       url = "https://github.com/Catizard/lampghost/releases/download/v${version}/lampghost.app.zip";
-      sha256 = "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3";
+      sha256 = "e6a30967be0b334f3dbdd4f8ed9f8250614922d590759d8c176104e48d9c75aa";
       type = "zip";
     };
 
     "x86_64-windows" = {
       url = "https://github.com/Catizard/lampghost/releases/download/v${version}/lampghost_windows.exe";
-      sha256 = "3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d";
+      sha256 = "6ea8528bd324d0d2147d8f0f0012a1aa66553f8193cc8adbfeb668b71ab2cd2a";
       type = "file";
     };
   };
