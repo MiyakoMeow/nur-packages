@@ -18,6 +18,7 @@
   clang-minimal = pkgs.callPackage ./pkgs/clang-minimal {};
 
   free-download-manager = pkgs.callPackage ./pkgs/free-download-manager {};
+  liberica-jdk-21 = pkgs.callPackage ./pkgs/liberica-jdk-21 {};
 
   # lampghost = pkgs.callPackage ./pkgs/lampghost {};
 }
