@@ -65,6 +65,7 @@ in
     desktopItems = lib.optionals stdenv.isLinux [desktopItem];
 
     # 所有平台通用设置
+    dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;
 
