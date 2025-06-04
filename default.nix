@@ -5,28 +5,24 @@
 # Having pkgs default to <nixpkgs> is fine though, and it lets you use short
 # commands such as:
 #     nix-build -A mypackage
-{pkgs ? import <nixpkgs> {}}: {
-  # The `lib`, `modules`, and `overlays` names are special
-  lib = import ./lib {inherit pkgs;}; # functions
-  modules = import ./modules; # NixOS modules
-  overlays = import ./overlays; # nixpkgs overlays
+{pkgs ? import <nixpkgs> {}}: let
+  # 特殊属性（需保留）
+  specialAttrs = {
+    # The `lib`, `modules`, and `overlays` names are special
+    lib = import ./lib {inherit pkgs;}; # functions
+    modules = import ./modules; # NixOS modules
+    overlays = import ./overlays; # nixpkgs overlays
+  };
 
-  # Packages
-  portaudio-java = pkgs.callPackage ./pkgs/portaudio-java {};
-  beatoraja = pkgs.callPackage ./pkgs/beatoraja {};
+  # 自动发现所有包目录
+  packagesDir = ./pkgs;
+  packageNames = builtins.attrNames (builtins.readDir packagesDir);
 
-  clang-minimal = pkgs.callPackage ./pkgs/clang-minimal {};
-
-  free-download-manager = pkgs.callPackage ./pkgs/free-download-manager {};
-  liberica-jdk-21 = pkgs.callPackage ./pkgs/liberica-jdk-21 {};
-
-  # lampghost = pkgs.callPackage ./pkgs/lampghost {};
-  lampghost-bin = pkgs.callPackage ./pkgs/lampghost-bin {};
-
-  hn-linux-client = pkgs.callPackage ./pkgs/hn-linux-client {};
-
-  fcitx5-pinyin-moegirl = pkgs.callPackage ./pkgs/fcitx5-pinyin-moegirl {};
-  fcitx5-pinyin-zhwiki = pkgs.callPackage ./pkgs/fcitx5-pinyin-zhwiki {};
-
-  grub-theme-suisei = pkgs.callPackage ./pkgs/grub-theme-suisei {};
-}
+  # 为每个目录创建包
+  autoPackages = builtins.listToAttrs (map (name: {
+      inherit name;
+      value = pkgs.callPackage (packagesDir + "/${name}") {};
+    })
+    packageNames);
+in
+  specialAttrs // autoPackages
