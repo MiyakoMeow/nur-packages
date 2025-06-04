@@ -13,11 +13,11 @@ in
     src = fetchFromGitHub {
       owner = "kirakiraAZK";
       repo = "suiGRUB";
-      rev = "main";
-      hash = "sha256-0g5fISqjOnKbAkCBCb3YuQTstV4ZQGC2+9vYjBYRbmc=";
+      rev = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
     };
 
     installPhase = ''
+      mkdir $out
       cp -r $src/* $out
     '';
 
