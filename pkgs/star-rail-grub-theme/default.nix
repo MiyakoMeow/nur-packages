@@ -1,5 +1,6 @@
 {
   lib,
+  pkgs,
   stdenv,
   fetchurl,
   writeShellScriptBin,
@@ -55,7 +56,18 @@
   };
 
   # 从 JSON 文件读取包信息
-  theme-info = lib.importJSON builtins.path {path = "${theme-info-json}/info.json";};
+  # theme-info = lib.importJSON builtins.path {path = "${theme-info-json}/info.json";};
+  # 2. 创建包含 import 语句的临时 Nix 文件
+  json-importer = let
+    # 关键：将文件路径写入 import 语句
+    importScript = ''import (builtins.toFile "import-json.nix" fromJSON (readFile "${theme-info-json}/info.json") ) '';
+  in
+    pkgs.runCommand "json-importer" {} ''
+      echo '${importScript}' > $out
+    '';
+
+  # 3. 实际导入 JSON 数据（在评估阶段）
+  theme-info = import json-importer;
 
   # 单个主题包构建函数
   mkThemePackage = pname: {
