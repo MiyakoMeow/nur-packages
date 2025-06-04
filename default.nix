@@ -26,7 +26,7 @@
   hn-linux-client = pkgs.callPackage ./pkgs/hn-linux-client {};
 
   fcitx5-pinyin-moegirl = pkgs.callPackage ./pkgs/fcitx5-pinyin-moegirl {};
-  # fcitx5-pinyin-zhwiki = pkgs.callPackage ./pkgs/fcitx5-pinyin-zhwiki {};
+  fcitx5-pinyin-zhwiki = pkgs.callPackage ./pkgs/fcitx5-pinyin-zhwiki {};
 
   grub-theme-suisei = pkgs.callPackage ./pkgs/grub-theme-suisei {};
 }
