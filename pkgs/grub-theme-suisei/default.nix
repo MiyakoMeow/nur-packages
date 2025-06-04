@@ -13,7 +13,8 @@ in
     src = fetchFromGitHub {
       owner = "kirakiraAZK";
       repo = "suiGRUB";
-      rev = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
+      rev = "main";
+      hash = "sha256-besErd3N+iVGiReYGzo6H3JKsgQOyRaRbe6E0wKKW54=";
     };
 
     installPhase = ''
