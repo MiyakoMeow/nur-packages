@@ -1,33 +1,24 @@
 {
   lib,
   pkgs,
-  fetchurl,
+  fetchFromGitHub,
   nix-update-script,
 }: let
-  version = "v2.0.4";
+  version = "dev";
 in
-  # --strip-components=1：解除一层嵌套
-  # 如果压缩包内直接包含 theme.txt 和资源文件（无子目录），则无需 --strip-components=1。
-  # 如果压缩包内有嵌套目录（如 grub-theme/theme.txt），需调整 --strip-components 的值。
   pkgs.stdenv.mkDerivation {
     name = "grub-theme-suisei";
-    version = version;
-    src = fetchurl {
-      # 根据参数选择下载源（需确保两个源的哈希一致）
-      url = "https://github.com/kirakiraAZK/suiGRUB/releases/download/${version}/Suisei.tar.gz";
-      hash = "sha256-+86bOkJhTtUCZoKoUbdZERJ3+JYW/XcuSqo657JGHqc="; # TODO: Fix
+    inherit version;
+
+    src = fetchFromGitHub {
+      owner = "kirakiraAZK";
+      repo = "suiGRUB";
+      rev = "main";
+      hash = "sha256-0g5fISqjOnKbAkCBCb3YuQTstV4ZQGC2+9vYjBYRbmc=";
     };
 
-    # 动态解压逻辑
-    # 核心修正：明确安装到$out
     installPhase = ''
-      mkdir -p $out
-      tar -xzf $src -C $out --strip-components=2
-      # 验证关键文件存在
-      if [ ! -f "$out/theme.txt" ]; then
-        echo "ERROR: theme.txt not found in $out!"
-        exit 1
-      fi
+      cp -r $src/* $out
     '';
 
     # 禁用自动解压步骤
