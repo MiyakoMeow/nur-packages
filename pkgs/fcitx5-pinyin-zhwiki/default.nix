@@ -12,7 +12,7 @@ in
     inherit pname version;
 
     src = fetchurl {
-      url = "$https://github.com/felixonmars/${pname}/releases/download/${version}/zhwiki-${date}.dict";
+      url = "$https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/${version}/zhwiki-${date}.dict";
       sha256 = "073a8kr83lb9yb3krrsbhmhrf23g78nvby2yqi1mjbf2fwna2z7g";
     };
 
