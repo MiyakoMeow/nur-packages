@@ -39,7 +39,8 @@
       export NIX_PATH=nixpkgs=${toString <nixpkgs>}
 
       # 运行生成脚本
-      generate-theme-info > $out
+      mkdir $out
+      generate-theme-info > $out/info.json
     '';
 
     # 固定输出推导，允许网络访问
@@ -54,7 +55,7 @@
   };
 
   # 从 JSON 文件读取包信息
-  theme-info = lib.importJSON theme-info-json;
+  theme-info = lib.importJSON builtins.path "${theme-info-json}/info.json";
 
   # 单个主题包构建函数
   mkThemePackage = pname: {
