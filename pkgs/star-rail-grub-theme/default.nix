@@ -55,7 +55,7 @@
   };
 
   # 从 JSON 文件读取包信息
-  theme-info = lib.importJSON builtins.path "${theme-info-json}/info.json";
+  theme-info = lib.importJSON builtins.path {path = "${theme-info-json}/info.json";};
 
   # 单个主题包构建函数
   mkThemePackage = pname: {
