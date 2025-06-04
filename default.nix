@@ -22,4 +22,6 @@
 
   # lampghost = pkgs.callPackage ./pkgs/lampghost {};
   lampghost-bin = pkgs.callPackage ./pkgs/lampghost-bin {};
+
+  hn-linux-client = pkgs.callPackage ./pkgs/hn-linux-client {};
 }
