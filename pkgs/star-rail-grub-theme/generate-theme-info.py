@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def calculate_sha256_nix(url):
+def calculate_sha256_nix(url: str):
     """使用 nix-prefetch-url 获取文件的 SHA256 哈希"""
     try:
         result = subprocess.run(
@@ -44,7 +44,7 @@ def calculate_sha256_nix(url):
         raise
 
 
-def calculate_sha256_request(url):
+def calculate_sha256_request(url: str):
     """计算远程文件的 SHA256 哈希值"""
     try:
         headers = {"Accept-Encoding": "identity"}
@@ -102,9 +102,10 @@ def get_release_assets(owner, repo, tag=None):
 
 def generate_package_name(asset_name):
     """生成 Nix 包名"""
+    # https://github.com/voidlhf/StarRailGrubThemes?tab=readme-ov-file#without-nixos-module
     base = re.sub(r"\.(tar\.gz|gz)$", "", asset_name, flags=re.IGNORECASE)
-    clean = base.replace(".", "")
-    name = f"star-rail-grub-theme-{clean.lower()}"
+    clean = base.lower().replace(".", "_")
+    name = f"star-rail-grub-theme-{clean}"
 
     return name
 

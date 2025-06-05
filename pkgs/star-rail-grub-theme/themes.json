@@ -89,12 +89,12 @@
     "sha256": "795f9614d9da09cacf044c259cffa6a44ac22149b182d2db1eb7fe2c775f4bcd",
     "tag": "20250524-070052"
   },
-  "star-rail-grub-theme-drratio": {
+  "star-rail-grub-theme-dr_ratio": {
     "url": "https://github.com/voidlhf/StarRailGrubThemes/releases/download/20250524-070052/Dr.Ratio.tar.gz",
     "sha256": "a2448fe73e4a2bb8ed5d39599d1263a5ec6c8f12864fb876cca8fe954511ff50",
     "tag": "20250524-070052"
   },
-  "star-rail-grub-theme-drratio_cn": {
+  "star-rail-grub-theme-dr_ratio_cn": {
     "url": "https://github.com/voidlhf/StarRailGrubThemes/releases/download/20250524-070052/Dr.Ratio_cn.tar.gz",
     "sha256": "10ae671a4bbc52ef347e3b49cb31a28f915da03d8e8ae9eeafc31304e3b7551c",
     "tag": "20250524-070052"
