@@ -1,6 +1,4 @@
-# nur-packages-template
-
-**MiyakoMeow's personal [NUR](https://github.com/nix-community/NUR) repository**
+# **MiyakoMeow's personal [NUR](https://github.com/nix-community/NUR) repository**
 
 ## Usage
 
