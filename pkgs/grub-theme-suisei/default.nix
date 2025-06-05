@@ -20,6 +20,12 @@ in
     installPhase = ''
       mkdir $out
       cp -r $src/* $out
+
+      # 验证主题文件
+      if [ ! -e "$out/theme.txt" ]; then
+        echo "ERROR: theme.txt not found in output directory"
+        exit 1
+      fi
     '';
 
     # 禁用自动解压步骤

@@ -16,20 +16,15 @@ stdenv.mkDerivation {
     inherit url sha256;
   };
 
+  # 禁用自动解压步骤
+  dontUnpack = true;
+  dontBuild = true;
+
   installPhase = ''
-    # 查找主题目录
-    dirs=($(find . -maxdepth 1 -type d ! -name '.'))
-
-    if [ ''${#dirs[@]} -eq 0 ]; then
-      echo "ERROR: No directories found in the archive"
-      exit 1
-    fi
-
-    themeDir="''${dirs[0]}"
-    echo "Using theme directory: $themeDir"
-
+    # 解压
+    # --strip-components=1：解除一层嵌套
     mkdir -p $out
-    cp -r "$themeDir"/* $out/
+    tar -xzf $src -C $out --strip-components=1
 
     # 验证主题文件
     if [ ! -e "$out/theme.txt" ]; then
