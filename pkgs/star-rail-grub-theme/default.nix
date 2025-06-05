@@ -1,113 +1,34 @@
+# default.nix
 {
   lib,
-  pkgs,
   stdenv,
   fetchurl,
-  writeShellScriptBin,
-  python3,
-  nix,
-  runtimeShell,
+  callPackage,
 }: let
   # 配置参数
   config = {
     owner = "voidlhf";
     repo = "StarRailGrubThemes";
-    tag = "20250524-070052"; # 默认为 null 表示所有 Release
+    tag = "20250524-070052"; # 默认为所有Release
   };
 
-  # Python 脚本用于生成包信息 JSON
-  generator-script = writeShellScriptBin "generate-theme-info" ''
-    ${python3}/bin/python ${./generate-theme-info.py} \
-      --owner "${config.owner}" \
-      --repo "${config.repo}" \
-      ${lib.optionalString (config.tag != null) "--tag \"${config.tag}\""}
-  '';
+  # 导入生成的包信息
+  theme-info-drv = callPackage ./generate-theme-info.nix {inherit config;};
+  theme-info = lib.importJSON (theme-info-drv + "/${theme-info-drv.name}");
 
-  # 运行 Python 脚本获取包信息
-  theme-info-json = stdenv.mkDerivation {
-    name =
-      "honkai-star-rail-theme-info"
-      + (
-        if config.tag != null
-        then "-${lib.replaceStrings ["/"] ["-"] config.tag}"
-        else ""
-      );
+  # 创建单个包的函数
+  mkThemePackage = pname: attrs:
+    callPackage ./theme-package.nix ({
+        inherit pname;
+      }
+      // attrs);
 
-    nativeBuildInputs = [generator-script nix];
-
-    buildCommand = ''
-      # 设置 NIX_PATH 确保 nix-prefetch-url 正常工作
-      export NIX_PATH=nixpkgs=${toString <nixpkgs>}
-
-      # 运行生成脚本
-      mkdir $out
-      generate-theme-info > $out/info.json
-    '';
-
-    # 固定输出推导，允许网络访问
-    outputHashMode = "flat";
-    outputHashAlgo = "sha256";
-    outputHash = lib.fakeSha256; # 首次构建时替换为实际哈希
-
-    # 确保可以访问网络
-    __noChroot = true;
-    allowSubstitutes = false;
-    preferLocalBuild = false;
-  };
-
-  # 从 JSON 文件读取包信息
-  # theme-info = lib.importJSON builtins.path {path = "${theme-info-json}/info.json";};
-  # 2. 创建包含 import 语句的临时 Nix 文件
-  json-importer = let
-    # 关键：将文件路径写入 import 语句
-    importScript = ''import (builtins.toFile "import-json.nix" fromJSON (readFile "${theme-info-json}/info.json") ) '';
-  in
-    pkgs.runCommand "json-importer" {} ''
-      echo '${importScript}' > $out
-    '';
-
-  # 3. 实际导入 JSON 数据（在评估阶段）
-  theme-info = import json-importer;
-
-  # 单个主题包构建函数
-  mkThemePackage = pname: {
-    url,
-    sha256,
-    tag,
-  }:
-    stdenv.mkDerivation {
-      inherit pname;
-      version = tag;
-
-      src = fetchurl {
-        inherit url sha256;
-      };
-
-      # 处理压缩包内的目录结构
-      installPhase = ''
-        # 找到压缩包内的第一层目录
-        themeDir=$(find . -maxdepth 1 -type d -name '*' | head -n1)
-
-        if [ -z "$themeDir" ]; then
-          echo "Error: No directory found in the archive"
-          exit 1
-        fi
-
-        # 创建目标目录
-        mkdir -p $out
-        # 移动主题内容到目标目录
-        cp -r $themeDir/* $out/
-      '';
-
-      meta = with lib; {
-        description = "Honkai: Star Rail GRUB theme";
-        homepage = "https://github.com/${config.owner}/${config.repo}";
-        license = licenses.gpl3;
-        platforms = platforms.all;
-      };
-    };
-
-  # 为所有主题创建包
+  # 创建所有包的集合
   theme-packages = lib.mapAttrs mkThemePackage theme-info;
-in
-  theme-packages
+in {
+  # 导出所有主题包
+  packages = theme-packages;
+
+  # 导出包信息生成器（用于调试）
+  theme-info = theme-info-drv;
+}
