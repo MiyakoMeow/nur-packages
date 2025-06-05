@@ -1,4 +1,4 @@
-# **MiyakoMeow's personal [NUR](https://github.com/nix-community/NUR) repository**
+# **[MiyakoMeow](https://github.com/MiyakoMeow)'s personal [NUR](https://github.com/nix-community/NUR) repository**
 
 ## Usage
 
