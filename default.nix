@@ -25,4 +25,8 @@
     })
     packageNames);
 in
-  specialAttrs // autoPackages
+  specialAttrs
+  // autoPackages
+  // {
+    star-rail-grub-theme-json = pkgs.callPackage ./pkgs-unavailable/star-rail-grub-theme/generate-theme-info.nix;
+  }
