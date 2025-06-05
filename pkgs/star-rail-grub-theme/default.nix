@@ -5,11 +5,7 @@
   recurseIntoAttrs,
 }: let
   # 从本地文件读取主题信息
-  theme-info = let
-    jsonFile = ./themes.json;
-    jsonData = builtins.readFile jsonFile;
-  in
-    lib.importJSON (builtins.toFile "themes.json" jsonData);
+  theme-info = lib.importJSON ./themes.json;
 
   # 单个包构建函数
   mkThemePackage = pname: attrs:
