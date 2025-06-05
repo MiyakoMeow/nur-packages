@@ -71,21 +71,38 @@ def get_release_assets(owner, repo, tag=None):
             headers["Authorization"] = f"token {token}"
 
         if tag:
+            # 获取特定标签的 release
             release_url = (
                 f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{tag}"
             )
             response = requests.get(release_url, headers=headers, timeout=15)
+            if response.status_code == 404:
+                logger.warning(f"Release tag '{tag}' not found for {owner}/{repo}")
+                return []
             response.raise_for_status()
             releases = [response.json()]
         else:
-            releases_url = f"https://api.github.com/repos/{owner}/{repo}/releases"
-            response = requests.get(releases_url, headers=headers, timeout=15)
+            # 只获取最新的 release
+            latest_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+            response = requests.get(latest_url, headers=headers, timeout=15)
+
+            # 处理没有 release 的情况
+            if response.status_code == 404:
+                logger.warning(f"No releases found for {owner}/{repo}")
+                return []
+
             response.raise_for_status()
-            releases = response.json()
+            releases = [response.json()]
 
         assets = []
         for release in releases:
+            # 跳过草稿版 release
+            if release.get("draft", False):
+                logger.info(f"Skipping draft release: {release['tag_name']}")
+                continue
+
             for asset in release.get("assets", []):
+                # 只处理 gz/tar.gz 文件
                 if asset["name"].lower().endswith((".tar.gz", ".gz")):
                     assets.append(
                         {
@@ -94,9 +111,15 @@ def get_release_assets(owner, repo, tag=None):
                             "release_tag": release["tag_name"],
                         }
                     )
+
+        logger.info(f"Found {len(assets)} assets in {len(releases)} releases")
         return assets
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error fetching releases: {str(e)}")
+        return []
     except Exception as e:
-        logger.error(f"Error fetching releases: {str(e)}")
+        logger.error(f"Unexpected error fetching releases: {str(e)}")
         return []
 
 
