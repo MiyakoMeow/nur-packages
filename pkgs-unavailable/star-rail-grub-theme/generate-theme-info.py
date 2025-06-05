@@ -85,7 +85,7 @@ def generate_package_name(asset_name, release_tag=None):
     """生成 Nix 包名"""
     base = re.sub(r"\.(tar\.gz|gz)$", "", asset_name, flags=re.IGNORECASE)
     clean = base.replace(".", "")
-    name = f"grub-theme-honkai-star-rail-{clean.lower()}"
+    name = f"star-rail-grub-theme-{clean.lower()}"
 
     if release_tag:
         clean_tag = re.sub(r"[^a-zA-Z0-9_-]", "", release_tag.replace("/", "-"))
@@ -101,7 +101,11 @@ def main():
         "--repo", default="StarRailGrubThemes", help="GitHub repository name"
     )
     parser.add_argument("--tag", help="Specific release tag to process")
-    parser.add_argument("--output", default="themes.json", help="Output JSON file path")
+    parser.add_argument(
+        "--output",
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"),
+        help="Output JSON file path",
+    )
 
     args = parser.parse_args()
 
