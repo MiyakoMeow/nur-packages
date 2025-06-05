@@ -100,15 +100,11 @@ def get_release_assets(owner, repo, tag=None):
         return []
 
 
-def generate_package_name(asset_name, release_tag=None):
+def generate_package_name(asset_name):
     """生成 Nix 包名"""
     base = re.sub(r"\.(tar\.gz|gz)$", "", asset_name, flags=re.IGNORECASE)
     clean = base.replace(".", "")
     name = f"star-rail-grub-theme-{clean.lower()}"
-
-    if release_tag:
-        clean_tag = re.sub(r"[^a-zA-Z0-9_-]", "", release_tag.replace("/", "-"))
-        name += f"-{clean_tag}"
 
     return name
 
@@ -134,7 +130,7 @@ def main():
 
     theme_info = {}
     for asset in assets:
-        pname = generate_package_name(asset["name"], asset.get("release_tag"))
+        pname = generate_package_name(asset["name"])
         logger.info(f"Processing: {pname}")
 
         sha256 = calculate_sha256_request(asset["url"])
