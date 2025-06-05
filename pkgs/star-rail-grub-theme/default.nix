@@ -1,9 +1,8 @@
 # default.nix
 {
   lib,
-  stdenv,
-  fetchurl,
   callPackage,
+  recurseIntoAttrs,
 }: let
   # 配置参数
   config = {
@@ -25,10 +24,14 @@
 
   # 创建所有包的集合
   theme-packages = lib.mapAttrs mkThemePackage theme-info;
-in {
-  # 导出所有主题包
-  packages = theme-packages;
+in
+  recurseIntoAttrs {
+    # 导出所有主题包
+    packages = theme-packages;
 
-  # 导出包信息生成器（用于调试）
-  theme-info = theme-info-drv;
-}
+    # 导出包信息生成器（用于调试）
+    theme-info = theme-info-drv;
+
+    # 导出所有包作为属性集
+    all = theme-packages;
+  }
