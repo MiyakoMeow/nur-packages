@@ -1,9 +1,8 @@
 # default.nix
 {
   lib,
-  stdenv,
-  fetchurl,
   callPackage,
+  recurseIntoAttrs,
 }: let
   # 从本地文件读取主题信息
   theme-info = let
@@ -21,19 +20,14 @@
 
   # 创建所有包集合
   theme-packages = lib.mapAttrs mkThemePackage theme-info;
-in {
-  # 暴露所有主题包
-  packages = theme-packages;
+in
+  recurseIntoAttrs {
+    # 暴露所有主题包
+    packages = theme-packages;
 
-  # 暴露单个包（可选）
-  # grub-theme-honkai-star-rail-example = theme-packages."grub-theme-honkai-star-rail-example";
+    # 暴露单个包（可选）
+    # grub-theme-honkai-star-rail-example = theme-packages."grub-theme-honkai-star-rail-example";
 
-  # 暴露完整集合
-  all = theme-packages;
-
-  # 元数据
-  meta = {
-    description = "Collection of Honkai: Star Rail GRUB themes";
-    homepage = "https://github.com/voidlhf/StarRailGrubThemes";
-  };
-}
+    # 暴露完整集合
+    all = theme-packages;
+  }
