@@ -11,6 +11,7 @@ import subprocess
 import requests
 import re
 import logging
+import hashlib
 
 # 配置日志
 logging.basicConfig(
@@ -21,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def calculate_sha256(url):
+def calculate_sha256_nix(url):
     """使用 nix-prefetch-url 获取文件的 SHA256 哈希"""
     try:
         result = subprocess.run(
@@ -41,6 +42,24 @@ def calculate_sha256(url):
             file=sys.stderr,
         )
         raise
+
+
+def calculate_sha256_request(url):
+    """计算远程文件的 SHA256 哈希值"""
+    try:
+        headers = {"Accept-Encoding": "identity"}
+        response = requests.get(url, stream=True, headers=headers, timeout=30)
+        response.raise_for_status()
+
+        hasher = hashlib.sha256()
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                hasher.update(chunk)
+
+        return hasher.hexdigest()
+    except Exception as e:
+        logger.error(f"Error downloading {url}: {str(e)}")
+        return None
 
 
 def get_release_assets(owner, repo, tag=None):
@@ -118,7 +137,7 @@ def main():
         pname = generate_package_name(asset["name"], asset.get("release_tag"))
         logger.info(f"Processing: {pname}")
 
-        sha256 = calculate_sha256(asset["url"])
+        sha256 = calculate_sha256_request(asset["url"])
         if not sha256:
             continue
 

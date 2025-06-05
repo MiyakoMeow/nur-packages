@@ -39,7 +39,7 @@ stdenv.mkDerivation {
   '';
 
   meta = with lib; {
-    description = "Honkai: Star Rail GRUB theme";
+    description = "Honkai: Star Rail GRUB theme (${pname})";
     homepage = "https://github.com/voidlhf/StarRailGrubThemes";
     license = licenses.gpl3;
     platforms = platforms.all;
