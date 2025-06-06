@@ -54,6 +54,7 @@ in
     installPhase = ''
       # 创建输出目录
       mkdir -p $out/ori
+      ori_dir="$out/ori"
 
       # 解压客户端到输出目录
       tar xf $src -C $out/ori --strip-components=1
@@ -72,11 +73,10 @@ in
         # 添加前缀hn-linux-到包装脚本
         wrapper_name="hn-linux-$exe_name"
         wrapper_path="$out/bin/$wrapper_name"
-
         # 创建更安全的包装脚本
         makeWrapper "$exe" "$wrapper_path" \
           --run 'HN_TEMP_DIR=$(mktemp -d -t hn-client-XXXXXX)' \
-          --run 'cp -r $out/ori/* "$HN_TEMP_DIR"' \
+          --run "cp -r \"$ori_dir/\"* \"\$HN_TEMP_DIR\"" \
           --run 'cd "$HN_TEMP_DIR"' \
           --add-flags "\$@"
 
