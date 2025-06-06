@@ -21,7 +21,7 @@
       headless = false;
       enableJavaFX = true;
     }),
-    portaudioJava ? null,
+    portaudioJava ? pkgs.callPackage ../portaudio-java {},
     useOBSVkCapture ? false,
   }: let
     # 根据 portaudioJava 是否存在设置类路径和库路径
@@ -67,15 +67,19 @@
         mv beatoraja${beatorajaVersion}-modernchic/* .
         rmdir beatoraja${beatorajaVersion}-modernchic
 
+        # 替换为指定的 jar 文件
+        ${lib.optionalString (jarSource != null) ''
+          rm beatoraja.jar
+          cp ${jarSource} ${pname}.jar
+        ''}
+
         # 验证解压结果
-        if [ ! -f beatoraja.jar ]; then
-          echo "ERROR: beatoraja.jar not found after unpacking!"
+        if [ ! -f ${pname}.jar ]; then
+          echo "ERROR: ${pname}.jar not found after unpacking!"
           find . -type f
           exit 1
         fi
 
-        # 替换为指定的 jar 文件
-        ${lib.optionalString (jarSource != null) "cp ${jarSource} beatoraja.jar"}
         runHook postUnpack
       '';
 
@@ -88,6 +92,7 @@
         # 安全复制文件
         find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/bin/
         rm $out/bin/*.bat
+        rm $out/bin/*.command
         rm $out/bin/*.dll
         find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -I{} cp -r -- {} $out/share/beatoraja/
 
@@ -98,7 +103,7 @@
         export _JAVA_OPTIONS='-Dsun.java2d.opengl=true -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel'
 
         # 用户数据目录配置
-        USER_DATA_DIR="\$HOME/.local/share/beatoraja"
+        USER_DATA_DIR="\$HOME/.local/share/${pname}"
         mkdir -p "\$USER_DATA_DIR"
 
         # 初始化用户目录结构
@@ -113,7 +118,7 @@
         done
 
         # 创建临时运行环境
-        RUNTIME_DIR=\$(mktemp -d -t beatoraja.XXX)
+        RUNTIME_DIR=\$(mktemp -d -t ${pname}.XXX)
 
         # 文件同步逻辑
         config_files=(
@@ -159,7 +164,7 @@
         trap cleanup EXIT
 
         # 链接必要文件
-        ln -sf $out/bin/beatoraja.jar "\$RUNTIME_DIR/"
+        ln -sf $out/bin/${pname}.jar "\$RUNTIME_DIR/"
 
         # 创建符号链接到用户目录
         for dir in "\$USER_DATA_DIR"/*/; do
@@ -174,7 +179,7 @@
         -XX:+UseShenandoahGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
         -XX:-UsePerfData -XX:+UseThreadPriorities -XX:+ShowCodeDetailsInExceptionMessages \\
         ${portaudioLibpath} \\
-        -cp beatoraja.jar${portaudioClasspath}:ir/* \\
+        -cp ${pname}.jar${portaudioClasspath}:ir/* \\
         bms.player.beatoraja.MainLoader "\$@"
         EOF
 
@@ -219,7 +224,7 @@ in rec {
         description = "A modern BMS Player";
         homepage = "https://www.mocha-repository.info/download.php";
         license = licenses.gpl3;
-        mainProgram = "beatoraja";
+        mainProgram = pname;
       };
       inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
     };
@@ -250,7 +255,7 @@ in rec {
         description = "A fork of beatoraja with enhanced features";
         homepage = "https://github.com/seraxis/lr2oraja-endlessdream";
         license = licenses.gpl3;
-        mainProgram = "lr2oraja-endlessdream";
+        mainProgram = pname;
       };
       inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
     };
@@ -279,7 +284,7 @@ in rec {
         description = "A fork of beatoraja with enhanced features";
         homepage = "https://github.com/seraxis/lr2oraja-endlessdream";
         license = licenses.gpl3;
-        mainProgram = "lr2oraja-endlessdream";
+        mainProgram = pname;
       };
       inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
     };
