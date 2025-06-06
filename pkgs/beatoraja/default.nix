@@ -14,10 +14,20 @@
       enableJavaFX = true;
     },
   useOBSVkCapture ? false,
+  portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {}, # 默认保留之前的 portaudio-java
 }: let
   pname = "beatoraja";
   version = "0.8.8";
-  portaudio-java = pkgs.callPackage ../portaudio-java/default.nix {};
+  # 根据 portaudioJava 是否存在设置类路径和库路径
+  portaudioClasspath =
+    if portaudioJava != null
+    then ":${portaudioJava}/share/java/*"
+    else "";
+
+  portaudioLibpath =
+    if portaudioJava != null
+    then "-Djava.library.path=${portaudioJava}/lib"
+    else "";
 in
   stdenv.mkDerivation {
     pname = pname;
@@ -35,7 +45,6 @@ in
     buildInputs =
       [
         javaPackageWithJavaFX
-        portaudio-java
         # 基础 GTK 库
         pkgs.gtk3
         # 常见 GTK 模块和主题
@@ -48,7 +57,8 @@ in
         # For video play
         pkgs.ffmpeg
       ]
-      ++ lib.optional useOBSVkCapture pkgs.obs-studio-plugins.obs-vkcapture;
+      ++ lib.optional useOBSVkCapture pkgs.obs-studio-plugins.obs-vkcapture
+      ++ lib.optional (portaudioJava != null) portaudioJava;
 
     JAVA_HOME = javaPackageWithJavaFX.home;
 
@@ -166,8 +176,8 @@ in
       "${javaPackageWithJavaFX}/bin/java" -Xms1g -Xmx4g \\
       -XX:+UseShenandoahGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
       -XX:-UsePerfData -XX:+UseThreadPriorities -XX:+ShowCodeDetailsInExceptionMessages \\
-      -Djava.library.path=${portaudio-java}/lib \\
-      -cp beatoraja.jar:${portaudio-java}/share/java/*:ir/* \\
+      ${portaudioLibpath} \\
+      -cp beatoraja.jar${portaudioClasspath}:ir/* \\
       bms.player.beatoraja.MainLoader "\$@"
       EOF
 
