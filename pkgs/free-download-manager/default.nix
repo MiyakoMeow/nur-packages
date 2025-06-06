@@ -14,14 +14,13 @@
   unixODBC,
   postgresql,
   mysql80,
-  proxy ? "",
 }:
 stdenv.mkDerivation rec {
-  pname = "freedownloadmanager";
+  pname = "free-download-manager";
   version = "6.26.1.6177";
 
   src = fetchurl {
-    url = "${proxy}http://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/freedownloadmanager_${version}_amd64.deb";
+    url = "http://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/freedownloadmanager_${version}_amd64.deb";
     sha256 = "ca3c9107fe2f9d55c1f199a2719c6cac4342094b69edb451d18639c7426d9938";
   };
 
@@ -116,5 +115,9 @@ stdenv.mkDerivation rec {
     license = licenses.unfree;
     platforms = ["x86_64-linux"];
     maintainers = []; # 替换为维护者信息
+    # 添加特殊说明
+    knownVulnerabilities = [
+      "https://www.freedownloadmanager.org/privacy.htm"
+    ];
   };
 }
