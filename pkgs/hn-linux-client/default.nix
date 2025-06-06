@@ -10,6 +10,7 @@
   glib,
   gdk-pixbuf,
   curl,
+  coreutils,
 }: let
   # 版本标识符（从URL中提取）
   pkgId = "64ac0526-0589-4ec9-9142-06db38ef3da2";
@@ -43,6 +44,7 @@ in
       glib # 提供 libgobject-2.0.so.0
       gdk-pixbuf # 提供 libgdk_pixbuf-2.0.so.0
       curl # 提供 libcurl.so.4
+      coreutils
     ];
 
     # 无需配置和构建步骤
@@ -71,11 +73,11 @@ in
         wrapper_name="hn-linux-$exe_name"
         wrapper_path="$out/bin/$wrapper_name"
 
-        # 创建包装脚本
+        # 创建更安全的包装脚本
         makeWrapper "$exe" "$wrapper_path" \
-          --run "mkdir -p \$TMPDIR/hn-client" \
-          --run "cp -r $out/ori/* \$TMPDIR/hn-client" \
-          --run "cd \$TMPDIR/hn-client" \
+          --run 'HN_TEMP_DIR=$(mktemp -d -t hn-client-XXXXXX)' \
+          --run 'cp -r $out/ori/* "$HN_TEMP_DIR"' \
+          --run 'cd "$HN_TEMP_DIR"' \
           --add-flags "\$@"
 
         # 设置包装脚本权限
