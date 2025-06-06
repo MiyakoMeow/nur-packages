@@ -94,7 +94,7 @@
         rm $out/${pname}-ori/*.bat
         rm $out/${pname}-ori/*.command
         rm $out/${pname}-ori/*.dll
-        find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -I{} cp -r -- {} $out/share/beatoraja/
+        find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -I{} cp -r -- {} $out/share/${pname}/
 
         # 创建启动脚本
         cat > $out/bin/${pname} <<EOF
@@ -107,7 +107,7 @@
         mkdir -p "\$USER_DATA_DIR"
 
         # 初始化用户目录结构
-        for dir in $out/share/beatoraja/*/; do
+        for dir in $out/share/${pname}/*/; do
           dir_name=\$(basename "\$dir")
           target_dir="\$USER_DATA_DIR/\$dir_name"
 
