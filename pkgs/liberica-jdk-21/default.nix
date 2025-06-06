@@ -15,12 +15,13 @@
 }: let
   # JDK 版本配置
   version = "21.0.7+9";
-  choice = "full";
 
   # 平台映射表 (Nix系统类型 -> 下载包架构)
   platformMap = {
     "x86_64-linux" = "linux-amd64";
     "aarch64-linux" = "linux-aarch64";
+    "riscv64-linux" = "linux-riscv64";
+    "ppc64le-linux" = "linux-ppc64le";
     "x86_64-darwin" = "macos-amd64";
     "aarch64-darwin" = "macos-aarch64";
   };
@@ -29,18 +30,20 @@
   platform = platformMap.${stdenv.hostPlatform.system} or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
 
   # 构建下载URL
-  srcUrl = "https://download.bell-sw.com/java/${version}/bellsoft-jdk${version}-${platform}-${choice}.tar.gz";
+  srcUrl = "https://download.bell-sw.com/java/${version}/bellsoft-jdk${version}-${platform}.tar.gz";
 
   # 各平台预计算SHA256哈希 (需根据实际下载更新)
   sha1s = {
-    "linux-amd64" = "2c7466a90a261dc20ea8922d16a63ed84e304a44";
-    "linux-aarch64" = "5f9fcb4c42e2861638d94c06e9f59d1291471947";
-    "macos-amd64" = "0817a12fad1aeaccdbf7498126e03e450bdbeb47";
-    "macos-aarch64" = "57bd67723c0afbe0ac08f9c189951ff1bf5eb011";
+    "linux-amd64" = "634febadb04485a271fe8307bb4675bd6e67ac3e";
+    "linux-aarch64" = "cd9f6b75ee8f5183a37f9a2c0dc6059fae5f720c";
+    "linux-riscv64" = "a84484bc62e0c388b1e6dc1bb85261472ccc3fc0";
+    "linux-ppc64le" = "1a17fd39e9d55b4f2e3b66bcf2c06db822f612d5";
+    "macos-amd64" = "b04ff105eab2805a4c3b0c3c1e07e50ee20f755d";
+    "macos-aarch64" = "f95b40ecffec05c548f2bb69bc0ae6050162a073";
   };
 in
   stdenv.mkDerivation rec {
-    pname = "liberica-jdk-21-${choice}";
+    pname = "liberica-jdk-21";
     inherit version;
 
     src = fetchurl {
@@ -59,11 +62,12 @@ in
 
     buildInputs = lib.optionals stdenv.isLinux [
       libz
-      xorg
-      alsa-lib
-      libXrender
-      libXi
-      libXtst
+      alsa-lib # 解决 libasound.so.2 依赖
+      xorg.libX11 # 解决 libX11.so.6 依赖
+      xorg.libXext # 解决 libXext.so.6 依赖
+      libXrender # 解决 libXrender.so.1 依赖
+      libXi # 解决 libXi.so.6 依赖
+      libXtst # 解决 libXtst.so.6 依赖
     ];
 
     # 无需配置和构建步骤
@@ -90,10 +94,6 @@ in
 
     # 设置环境钩子 (用于nix-shell)
     setupHook = ./setup-hook.sh;
-
-    passthru = {
-      home = builtins.placeholder "out"; # 指向输出路径占位符
-    };
 
     meta = with lib; {
       description = "Libreica JDK, a certified build of OpenJDK by BellSoft";
