@@ -15,7 +15,7 @@ inputs = {
 };
 ```
 
-- `configuration.nix`:
+- (Optional) Add Cache Server in `configuration.nix`:
 
 ```nix
 nix.settings = {
@@ -41,6 +41,30 @@ environment.systemPackages = with pkgs; let
   nur-miyakomeow = inputs.nur-miyakomeow.packages.${pkgs.system};
 in [
   nur-miyakomeow.liberica-jdk-21
+];
+```
+
+- Or Use `nixpkgs.overlay`:
+
+```nix
+# nixpkgs设置
+nixpkgs = {
+  config = {
+    # 可选：允许非自由软件
+    allowUnfree = true;
+  };
+  overlays = [
+    # NUR
+    inputs.nur.overlays.default
+    # MiyakoMeow's NUR Repo
+    (final: prev: {
+      nur-miyakomeow = inputs.nur-miyakomeow.packages.${prev.system};
+    })
+  ];
+};
+
+environment.systemPackages = with pkgs.nur-miyakomeow; [
+  liberica-jdk-21 
 ];
 ```
 
