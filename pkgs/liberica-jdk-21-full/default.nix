@@ -59,9 +59,8 @@ in
 
     buildInputs = lib.optionals stdenv.isLinux [
       libz
+      xorg
       alsa-lib
-      xorg.libX11
-      xorg.libXext
       libXrender
       libXi
       libXtst
