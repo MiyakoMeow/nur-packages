@@ -23,13 +23,13 @@
     # 调用包目录的 default.nix
     result = pkgs.callPackage path {};
 
-    # 检查是否是包集合（包含 packages 或 all 属性）
-    isPackageSet = result ? packages || result ? all;
+    # 检查是否是包集合（包含 packagesInSet 属性）
+    isPackageSet = result ? packagesInSet;
   in
     if isPackageSet
     then
       # 如果是包集合，展开所有包
-      result.packages or result.all or {}
+      result.packagesInSet or {}
     else
       # 如果是单个包，保持原样
       result;

@@ -22,6 +22,9 @@ in {
   # 暴露完整集合
   all = theme-packages;
 
+  # 新变量，暴露所有主题包
+  packagesInSet = theme-packages;
+
   # 元数据
   meta = {
     description = "Collection of Honkai: Star Rail GRUB themes";
