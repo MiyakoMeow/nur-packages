@@ -5,17 +5,18 @@
   fetchurl,
   makeDesktopItem,
   copyDesktopItems,
+  # Deps
   unzip,
-  jdk,
-  proxy ? "",
+  # Args
+  javaPackageWithJavaFX ?
+    pkgs.jdk.override {
+      headless = false;
+      enableJavaFX = true;
+    },
   useOBSVkCapture ? false,
 }: let
   pname = "beatoraja";
   version = "0.8.8";
-  custom-jdk = jdk.override {
-    headless = false;
-    enableJavaFX = true;
-  };
   portaudio-java = pkgs.callPackage ../portaudio-java/default.nix {};
 in
   stdenv.mkDerivation {
@@ -23,7 +24,7 @@ in
     version = version;
 
     src = fetchurl {
-      url = "${proxy}https://www.mocha-repository.info/download/beatoraja${version}-modernchic.zip";
+      url = "https://www.mocha-repository.info/download/beatoraja${version}-modernchic.zip";
       sha256 = "1rzp15ravq5vm14vb4y99hx7qlvvvbfrhkcrfhm26irc7rdv29h9";
     };
 
@@ -33,7 +34,7 @@ in
     ];
     buildInputs =
       [
-        custom-jdk
+        javaPackageWithJavaFX
         portaudio-java
         # 基础 GTK 库
         pkgs.gtk3
@@ -49,7 +50,7 @@ in
       ]
       ++ lib.optional useOBSVkCapture pkgs.obs-studio-plugins.obs-vkcapture;
 
-    JAVA_HOME = custom-jdk.home;
+    JAVA_HOME = javaPackageWithJavaFX.home;
 
     unpackPhase = ''
       runHook preUnpack
@@ -86,7 +87,7 @@ in
       # 创建启动脚本
       cat > $out/bin/beatoraja <<EOF
       #!${stdenv.shell}
-      export JAVA_HOME="${custom-jdk.home}"
+      export JAVA_HOME="${javaPackageWithJavaFX.home}"
       export _JAVA_OPTIONS='-Dsun.java2d.opengl=true -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel'
 
       # 用户数据目录配置
@@ -162,7 +163,7 @@ in
       # 运行游戏
       cd "\$RUNTIME_DIR"
       ${lib.optionalString useOBSVkCapture "${pkgs.obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture"} \\
-      "${custom-jdk}/bin/java" -Xms1g -Xmx4g \\
+      "${javaPackageWithJavaFX}/bin/java" -Xms1g -Xmx4g \\
       -XX:+UseShenandoahGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
       -XX:-UsePerfData -XX:+UseThreadPriorities -XX:+ShowCodeDetailsInExceptionMessages \\
       -Djava.library.path=${portaudio-java}/lib \\
