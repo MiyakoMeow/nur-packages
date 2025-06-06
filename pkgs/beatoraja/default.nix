@@ -6,7 +6,6 @@
   fetchzip,
   makeDesktopItem,
   copyDesktopItems,
-  recurseIntoAttrs,
   unzip,
 }: let
   # 公共配置函数
@@ -199,89 +198,89 @@
         })
       ];
     };
-in
-  recurseIntoAttrs {
-    # beatoraja 包定义
-    beatoraja = {
-      portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
-      useOBSVkCapture ? false,
-    }: let
-      pname = "beatoraja";
-      version = "0.8.8";
-      beatorajaVersion = version;
-      beatorajaArchive = fetchurl {
-        url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
-        sha256 = "1rzp15ravq5vm14vb4y99hx7qlvvvbfrhkcrfhm26irc7rdv29h9";
+in rec {
+  # beatoraja 包定义
+  beatoraja = {
+    portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
+    useOBSVkCapture ? false,
+  }: let
+    pname = "beatoraja";
+    version = "0.8.8";
+    beatorajaVersion = version;
+    beatorajaArchive = fetchurl {
+      url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
+      sha256 = "1rzp15ravq5vm14vb4y99hx7qlvvvbfrhkcrfhm26irc7rdv29h9";
+    };
+  in
+    commonAttrs {
+      inherit pname version;
+      meta = with lib; {
+        description = "A modern BMS Player";
+        homepage = "https://www.mocha-repository.info/download.php";
+        license = licenses.gpl3;
+        mainProgram = "beatoraja";
       };
-    in
-      commonAttrs {
-        inherit pname version;
-        meta = with lib; {
-          description = "A modern BMS Player";
-          homepage = "https://www.mocha-repository.info/download.php";
-          license = licenses.gpl3;
-          mainProgram = "beatoraja";
-        };
-        inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
-      };
+      inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
+    };
 
-    # lr2oraja 包定义
-    lr2oraja = {
-      portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
-      useOBSVkCapture ? false,
-    }: let
-      pname = "lr2oraja";
-      version = "build11611350155";
-      beatorajaVersion = "0.8.8";
-      beatorajaArchive = fetchurl {
-        url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
-        sha256 = "1rzp15ravq5vm14vb4y99hx7qlvvvbfrhkcrfhm26irc7rdv29h9";
+  # lr2oraja 包定义
+  lr2oraja = {
+    portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
+    useOBSVkCapture ? false,
+  }: let
+    pname = "lr2oraja";
+    version = "build11611350155";
+    beatorajaVersion = "0.8.8";
+    beatorajaArchive = fetchurl {
+      url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
+      sha256 = "1rzp15ravq5vm14vb4y99hx7qlvvvbfrhkcrfhm26irc7rdv29h9";
+    };
+    lr2orajaJar =
+      (fetchzip {
+        url = "https://github.com/wcko87/lr2oraja/releases/download/${version}/LR2oraja.zip";
+        hash = "sha256-fjhvJRjpSUEAwPmxgoyKvEFWzb4ZOiUASUhFjG9CPTg=";
+      })
+      + "/beatoraja.jar";
+  in
+    commonAttrs {
+      inherit pname version;
+      jarSource = lr2orajaJar;
+      meta = with lib; {
+        description = "A fork of beatoraja with enhanced features";
+        homepage = "https://github.com/seraxis/lr2oraja-endlessdream";
+        license = licenses.gpl3;
+        mainProgram = "lr2oraja-endlessdream";
       };
-      lr2orajaJar =
-        (fetchzip {
-          url = "https://github.com/wcko87/lr2oraja/releases/download/${version}/LR2oraja.zip";
-          hash = "sha256-fjhvJRjpSUEAwPmxgoyKvEFWzb4ZOiUASUhFjG9CPTg=";
-        })
-        + "/beatoraja.jar";
-    in
-      commonAttrs {
-        inherit pname version;
-        jarSource = lr2orajaJar;
-        meta = with lib; {
-          description = "A fork of beatoraja with enhanced features";
-          homepage = "https://github.com/seraxis/lr2oraja-endlessdream";
-          license = licenses.gpl3;
-          mainProgram = "lr2oraja-endlessdream";
-        };
-        inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
-      };
+      inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
+    };
 
-    # lr2oraja-endlessdream 包定义
-    lr2oraja-endlessdream = {
-      portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
-      useOBSVkCapture ? false,
-    }: let
-      pname = "lr2oraja-endlessdream";
-      version = "0.2.1";
-      beatorajaVersion = "0.8.7";
-      beatorajaArchive = fetchurl {
-        url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
-        hash = "sha256-rkM8z9Oyqy3dS9zWgTQyjeEQg7Nax1V5hohL/neCNr8=";
+  # lr2oraja-endlessdream 包定义
+  lr2oraja-endlessdream = {
+    portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
+    useOBSVkCapture ? false,
+  }: let
+    pname = "lr2oraja-endlessdream";
+    version = "0.2.1";
+    beatorajaVersion = "0.8.7";
+    beatorajaArchive = fetchurl {
+      url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
+      hash = "sha256-rkM8z9Oyqy3dS9zWgTQyjeEQg7Nax1V5hohL/neCNr8=";
+    };
+    lr2orajaJar = fetchurl {
+      url = "https://github.com/seraxis/lr2oraja-endlessdream/releases/download/v${version}/lr2oraja-${beatorajaVersion}-endlessdream-linux-${version}.jar";
+      hash = "sha256-czkFZP3gn9ieq5w6NLCvvSTufgesFhtD7YGEwyD3HYs=";
+    };
+  in
+    commonAttrs {
+      inherit pname version;
+      jarSource = lr2orajaJar;
+      meta = with lib; {
+        description = "A fork of beatoraja with enhanced features";
+        homepage = "https://github.com/seraxis/lr2oraja-endlessdream";
+        license = licenses.gpl3;
+        mainProgram = "lr2oraja-endlessdream";
       };
-      lr2orajaJar = fetchurl {
-        url = "https://github.com/seraxis/lr2oraja-endlessdream/releases/download/v${version}/lr2oraja-${beatorajaVersion}-endlessdream-linux-${version}.jar";
-        hash = "sha256-czkFZP3gn9ieq5w6NLCvvSTufgesFhtD7YGEwyD3HYs=";
-      };
-    in
-      commonAttrs {
-        inherit pname version;
-        jarSource = lr2orajaJar;
-        meta = with lib; {
-          description = "A fork of beatoraja with enhanced features";
-          homepage = "https://github.com/seraxis/lr2oraja-endlessdream";
-          license = licenses.gpl3;
-          mainProgram = "lr2oraja-endlessdream";
-        };
-        inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
-      };
-  }
+      inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
+    };
+  packagesInSet = [beatoraja lr2oraja lr2oraja-endlessdream];
+}
