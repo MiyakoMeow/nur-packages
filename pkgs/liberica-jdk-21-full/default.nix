@@ -93,28 +93,6 @@ in
       libxkbcommon
     ];
 
-    # 指定库搜索路径
-    autoPatchelfLibraryPath = [
-      "${ffmpeg-full.lib}/lib"
-      "${gtk3}/lib"
-      "${glib}/lib"
-      "${cairo}/lib"
-      "${pango}/lib"
-      "${atk}/lib"
-      "${gdk-pixbuf}/lib"
-      "${freetype}/lib"
-    ];
-
-    # 显式修补特定库
-    autoPatchelfIgnoreMissingDeps = [
-      # 忽略版本号差异
-      "libavcodec.so"
-      "libavformat.so"
-      "libavcodec-ffmpeg.so"
-      "libavformat-ffmpeg.so"
-      "libavutil.so"
-    ];
-
     # 无需配置和构建步骤
     dontConfigure = true;
     dontBuild = true;
