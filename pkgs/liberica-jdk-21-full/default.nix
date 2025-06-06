@@ -12,6 +12,17 @@
   libXrender,
   libXi,
   libXtst,
+  ffmpeg-full,
+  glib,
+  gtk3,
+  atk,
+  cairo,
+  pango,
+  gdk-pixbuf,
+  freetype,
+  libdrm,
+  mesa,
+  libxkbcommon,
 }: let
   # JDK 版本配置
   version = "21.0.7+9";
@@ -65,6 +76,21 @@ in
       libXrender
       libXi
       libXtst
+      # 核心多媒体依赖
+      ffmpeg-full # 提供 libavcodec.so, libavformat.so
+      # JavaFX GUI 依赖
+      glib
+      gtk3
+      atk
+      cairo
+      pango
+      gdk-pixbuf
+      # 字体渲染
+      freetype
+      # 额外依赖
+      libdrm
+      mesa
+      libxkbcommon
     ];
 
     # 无需配置和构建步骤
