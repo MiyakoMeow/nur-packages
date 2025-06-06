@@ -87,13 +87,13 @@
         runHook preInstall
 
         # 创建标准目录结构
-        mkdir -p $out/{bin,share/beatoraja}
+        mkdir -p $out/{bin,bin-ori,share/beatoraja}
 
         # 安全复制文件
-        find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/bin/
-        rm $out/bin/*.bat
-        rm $out/bin/*.command
-        rm $out/bin/*.dll
+        find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/bin-ori/
+        rm $out/bin-ori/*.bat
+        rm $out/bin-ori/*.command
+        rm $out/bin-ori/*.dll
         find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -I{} cp -r -- {} $out/share/beatoraja/
 
         # 创建启动脚本
@@ -164,7 +164,7 @@
         trap cleanup EXIT
 
         # 链接必要文件
-        ln -sf $out/bin/${pname}.jar "\$RUNTIME_DIR/"
+        ln -sf $out/bin-ori/${pname}.jar "\$RUNTIME_DIR/"
 
         # 创建符号链接到用户目录
         for dir in "\$USER_DATA_DIR"/*/; do
