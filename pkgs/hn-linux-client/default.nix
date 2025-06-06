@@ -4,7 +4,12 @@
   fetchurl,
   autoPatchelfHook,
   makeWrapper,
-  addToPath ? true, # 是否注册命令行可执行文件
+  makeDesktopItem,
+  # Deps
+  gtk2,
+  glib,
+  gdk-pixbuf,
+  curl,
 }: let
   # 版本标识符（从URL中提取）
   pkgId = "64ac0526-0589-4ec9-9142-06db38ef3da2";
@@ -26,16 +31,18 @@ in
     };
 
     # 自动修补二进制文件
-    nativeBuildInputs =
-      [
-        autoPatchelfHook
-      ]
-      ++ lib.optionals addToPath [
-        makeWrapper
-      ];
+    nativeBuildInputs = [
+      autoPatchelfHook
+      makeWrapper
+    ];
 
-    # 添加运行时依赖
+    # 添加运行时依赖，显式声明所有缺失的库
     buildInputs = [
+      stdenv.cc.cc.lib # 提供 libstdc++.so.6, libgcc_s.so.1
+      gtk2 # 提供 libgtk-x11-2.0.so.0, libgdk-x11-2.0.so.0
+      glib # 提供 libgobject-2.0.so.0
+      gdk-pixbuf # 提供 libgdk_pixbuf-2.0.so.0
+      curl # 提供 libcurl.so.4
     ];
 
     # 无需配置和构建步骤
@@ -44,33 +51,56 @@ in
 
     installPhase = ''
       # 创建输出目录
-      mkdir -p $out
+      mkdir -p $out/ori
 
       # 解压客户端到输出目录
-      tar xf $src -C $out --strip-components=1
+      tar xf $src -C $out/ori --strip-components=1
 
-      # 注册命令行工具 (可选)
-      ${lib.optionalString addToPath ''
-        # 确保bin目录存在
-        if [ -d "$out/bin" ]; then
-          mkdir -p $out/nix-support/bin
+      # 确保bin目录下存在可执行文件
+      if [ ! -f "$out/ori/client" ]; then
+        echo "ERROR: client not found in (out)/bin directory"
+        exit 1
+      fi
 
-          # 为所有可执行文件创建包装器
-          for binfile in $out/bin/*; do
-            if [ -f "$binfile" ] && [ -x "$binfile" ]; then
-              # 创建包装脚本
-              makeWrapper "$binfile" "$out/nix-support/bin/$(basename $binfile)"
-            fi
-          done
+      # 为每个原始可执行文件创建包装脚本
+      for exe in $(find $out/ori -type f -executable); do
+        # 获取文件名（不含路径）
+        exe_name=$(basename "$exe")
 
-          # 将bin目录添加到PATH
-          echo "export PATH=$out/nix-support/bin:\$PATH" >> $out/nix-support/setup-hook
-        fi
-      ''}
+        # 添加前缀hn-linux-到包装脚本
+        wrapper_name="hn-linux-$exe_name"
+        wrapper_path="$out/bin/$wrapper_name"
+
+        # 创建包装脚本
+        makeWrapper "$exe" "$wrapper_path" \
+          --run "mkdir -p \$TMPDIR/hn-client" \
+          --run "cp -r $out/ori/* \$TMPDIR/hn-client" \
+          --run "cd \$TMPDIR/hn-client" \
+          --add-flags "\$@"
+
+        # 设置包装脚本权限
+        chmod +x "$wrapper_path"
+      done
     '';
 
     # 设置环境钩子
     setupHook = ./setup-hook.sh;
+
+    desktopItems = let
+      pname = "hn-linux-client";
+    in [
+      (makeDesktopItem {
+        name = pname;
+        desktopName = "China Telecom (HUNAN Campus Net) Linux Client";
+        exec = pname;
+        comment = "HN Linux Client, for net interface of China Telecom in HUNAN University";
+        mimeTypes = [
+          "application/network"
+        ];
+        categories = ["Network"];
+        terminal = false;
+      })
+    ];
 
     meta = with lib; {
       description = "HN Linux Client, for net interface of China Telecom in HUNAN University";
