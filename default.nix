@@ -21,34 +21,41 @@
   # 导入单个包或包集合（返回原始结果）
   importPackage = path: pkgs.callPackage path {};
 
-  # 辅助函数：递归收集所有 derivations
+  # 辅助函数：递归收集所有 derivations 并保留原始名称
   lib =
     pkgs.lib
     // {
-      # 展平属性集并收集所有 derivations
-      flattenAttrs = attrs: let
+      # 收集所有包到平面属性集（保留原始名称）
+      collectPackages = attrs: let
         # 递归收集函数
-        collect = path: value:
+        collector = acc: path: value:
           if lib.isDerivation value
-          then [
-            {
-              name = lib.concatStringsSep "-" path;
-              value = value;
-            }
-          ]
+          then
+            # 遇到 derivation，使用其名称（pname 或 name）作为键
+            let
+              pkgName = value.pname or (lib.getName value);
+            in
+              if acc ? ${pkgName}
+              then
+                builtins.trace "WARNING: Duplicate package name '${pkgName}' detected. Replacing old derivation."
+                (acc // {${pkgName} = value;})
+              else acc // {${pkgName} = value;}
+          else if value ? packagesInSet
+          then
+            # 处理包集合：递归处理 packagesInSet
+            collector acc path value.packagesInSet
           else if lib.isAttrs value
           then
-            # 优先处理 packagesInSet 集合
-            if value ? packagesInSet
-            then collect path value.packagesInSet
-            else
-              # 递归处理普通属性集
-              lib.concatLists (lib.mapAttrsToList
-                (name: val: collect (path ++ [name]) val)
-                value)
-          else [];
+            # 递归处理普通属性集
+            lib.foldl' (
+              acc: key:
+                collector acc (path ++ [key]) value.${key}
+            )
+            acc (lib.attrNames value)
+          else acc; # 忽略非属性/非 derivation
       in
-        builtins.listToAttrs (collect [] attrs);
+        # 从根属性集开始收集
+        collector {} [] attrs;
     };
 
   # 为每个目录创建包或包集合
@@ -59,7 +66,7 @@
     packageNames);
 
   # 收集所有展开的包（包括单个包和集合中的包）
-  allPackages = lib.flattenAttrs autoPackages;
+  allPackages = lib.collectPackages autoPackages;
 in
   specialAttrs
   // autoPackages # 保留按目录组织的包集合
