@@ -90,7 +90,7 @@
         mkdir -p $out/{bin,${pname}-ori,share/beatoraja}
 
         # 安全复制文件
-        find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/bin-ori/
+        find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/${pname}-ori/
         rm $out/${pname}-ori/*.bat
         rm $out/${pname}-ori/*.command
         rm $out/${pname}-ori/*.dll
