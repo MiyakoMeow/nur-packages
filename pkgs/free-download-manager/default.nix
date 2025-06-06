@@ -109,10 +109,15 @@ stdenv.mkDerivation rec {
       -exec patchelf --add-needed libxcb-icccm.so.4 {} \;
   '';
 
-  meta = with lib; {
+  meta = {
     description = "FDM is a powerful modern download accelerator and organizer.";
     homepage = "https://www.freedownloadmanager.org/";
-    license = licenses.unfree;
+    license = {
+      shortName = "fdm-terms-and-privacy";
+      fullName = "Free Download Manager - Terms & Privacy";
+      url = "https://www.freedownloadmanager.org/privacy.htm";
+      free = false;
+    };
     platforms = ["x86_64-linux"];
     maintainers = []; # 替换为维护者信息
     # 添加特殊说明

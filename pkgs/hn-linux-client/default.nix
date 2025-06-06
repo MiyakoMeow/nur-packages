@@ -104,10 +104,15 @@ in
       })
     ];
 
-    meta = with lib; {
+    meta = {
       description = "HN Linux Client, for net interface of China Telecom in HUNAN University";
       homepage = "http://222.246.130.17:37209/";
-      license = licenses.unfree; # 根据实际许可证调整
+      license = {
+        shortName = "tianyi-terms-and-privacy";
+        fullName = "TianYi Terms & Privacy";
+        url = "http://124.232.225.19:10003/";
+        free = false;
+      };
       platforms = ["x86_64-linux"]; # 仅支持64位Linux
       maintainers = [];
     };
