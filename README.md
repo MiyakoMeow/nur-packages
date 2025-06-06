@@ -58,7 +58,10 @@ nixpkgs = {
     inputs.nur.overlays.default
     # MiyakoMeow's NUR Repo
     (final: prev: {
-      nur-miyakomeow = inputs.nur-miyakomeow.packages.${prev.system};
+      nur-miyakomeow = import inputs.nur-miyakomeow {
+        # 关键点：使用当前系统的配置，使上述config能够生效
+        pkgs = prev;
+      };
     })
   ];
 };
