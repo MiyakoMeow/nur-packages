@@ -18,39 +18,17 @@
   packagesDir = ./pkgs;
   packageNames = builtins.attrNames (builtins.readDir packagesDir);
 
-  # 导入单个包或包集合
-  importPackage = path: let
-    # 调用包目录的 default.nix
-    result = pkgs.callPackage path {};
+  # 导入单个包或包集合（返回原始结果）
+  importPackage = path: pkgs.callPackage path {};
 
-    # 检查是否是包集合（包含 packagesInSet 属性）
-    isPackageSet = result ? packagesInSet;
-  in
-    if isPackageSet
-    then
-      # 如果是包集合，展开所有包
-      result.packagesInSet or {}
-    else
-      # 如果是单个包，保持原样
-      result;
-
-  # 为每个目录创建包或包集合
-  autoPackages = builtins.listToAttrs (map (name: {
-      name = name;
-      value = importPackage (packagesDir + "/${name}");
-    })
-    packageNames);
-
-  # 收集所有展开的包
-  allPackages = lib.flattenAttrs autoPackages;
-
-  # 辅助函数：展平属性集
+  # 辅助函数：递归收集所有 derivations
   lib =
     pkgs.lib
     // {
+      # 展平属性集并收集所有 derivations
       flattenAttrs = attrs: let
-        # 递归展平嵌套属性集
-        flatten = path: value:
+        # 递归收集函数
+        collect = path: value:
           if lib.isDerivation value
           then [
             {
@@ -60,13 +38,28 @@
           ]
           else if lib.isAttrs value
           then
-            lib.concatLists (lib.mapAttrsToList
-              (name: value: flatten (path ++ [name]) value)
-              value)
+            # 优先处理 packagesInSet 集合
+            if value ? packagesInSet
+            then collect path value.packagesInSet
+            else
+              # 递归处理普通属性集
+              lib.concatLists (lib.mapAttrsToList
+                (name: val: collect (path ++ [name]) val)
+                value)
           else [];
       in
-        builtins.listToAttrs (flatten [] attrs);
+        builtins.listToAttrs (collect [] attrs);
     };
+
+  # 为每个目录创建包或包集合
+  autoPackages = builtins.listToAttrs (map (name: {
+      name = name;
+      value = importPackage (packagesDir + "/${name}");
+    })
+    packageNames);
+
+  # 收集所有展开的包（包括单个包和集合中的包）
+  allPackages = lib.flattenAttrs autoPackages;
 in
   specialAttrs
   // autoPackages # 保留按目录组织的包集合
