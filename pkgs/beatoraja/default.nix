@@ -4,6 +4,7 @@
   pkgs,
   fetchurl,
   fetchzip,
+  callPackage,
   makeDesktopItem,
   copyDesktopItems,
   unzip,
@@ -282,5 +283,9 @@ in rec {
       };
       inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
     };
-  packagesInSet = [beatoraja lr2oraja lr2oraja-endlessdream];
+  packagesInSet = {
+    beatoraja = callPackage beatoraja {};
+    lr2oraja = callPackage lr2oraja {};
+    lr2oraja-endlessdream = callPackage lr2oraja-endlessdream {};
+  };
 }
