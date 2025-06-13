@@ -2,6 +2,7 @@
   lib,
   stdenvNoCC,
   fetchFromGitHub,
+  nix-update-script,
 }: let
   # 从GitHub获取整个主题仓库
   src = fetchFromGitHub {
@@ -59,6 +60,12 @@
           exit 1
         fi
       '';
+
+      passthru = {
+        updateScript =
+          nix-update-script {
+          };
+      };
 
       meta = with lib; {
         description = "GRUB2 theme '${themeDir}' from 13atm01/GRUB-Theme";
