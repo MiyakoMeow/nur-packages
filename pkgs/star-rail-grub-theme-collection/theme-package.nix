@@ -1,14 +1,14 @@
 # theme-package.nix
 {
   lib,
-  stdenv,
+  stdenvNoCC,
   fetchurl,
   pname,
   url,
   sha256,
   tag,
 }:
-stdenv.mkDerivation {
+stdenvNoCC.mkDerivation {
   inherit pname;
   version = tag;
 
