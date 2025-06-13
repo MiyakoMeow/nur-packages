@@ -113,6 +113,7 @@ stdenv.mkDerivation rec {
     description = "FDM is a powerful modern download accelerator and organizer.";
     homepage = "https://www.freedownloadmanager.org/";
     license = licenses.unfree;
+    mainProgram = "fdm";
     platforms = ["x86_64-linux"];
     maintainers = []; # 替换为维护者信息
   };

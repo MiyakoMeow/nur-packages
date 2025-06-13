@@ -99,6 +99,7 @@ in
       description = "Libreica JDK, a certified build of OpenJDK by BellSoft";
       homepage = "https://bell-sw.com/";
       license = licenses.gpl2Classpath; # GPLv2 with Classpath exception
+      mainProgram = "java";
       platforms = attrNames platformMap;
       maintainers = [];
     };

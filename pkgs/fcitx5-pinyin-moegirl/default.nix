@@ -31,6 +31,6 @@ in
     meta = with lib; {
       description = "Fcitx 5 pinyin dictionary generator for MediaWiki instances. Releases for dict of zh.moegirl.org.cn. (auto update)";
       homepage = "https://github.com/outloudvi/mw2fcitx";
-      license = licenses.unlicense;
+      license = licenses.mit;
     };
   }

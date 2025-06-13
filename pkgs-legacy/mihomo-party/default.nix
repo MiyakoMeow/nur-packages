@@ -145,6 +145,7 @@ stdenv.mkDerivation rec {
     homepage = "https://mihomoparty.org"; # 替换实际官网
     license = licenses.mit; # 根据实际许可证修改
     platforms = ["x86_64-linux"]; # 根据架构需求修改
+    mainProgram = "mihomo-party";
     broken = true;
   };
 }

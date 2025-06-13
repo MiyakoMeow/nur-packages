@@ -108,6 +108,7 @@ in
       description = "HN Linux Client, for net interface of China Telecom in HUNAN University";
       homepage = "http://222.246.130.17:37209/";
       license = licenses.unfree; # 根据实际许可证调整
+      mainProgram = "hn-linux-client";
       platforms = ["x86_64-linux"]; # 仅支持64位Linux
       maintainers = [];
     };

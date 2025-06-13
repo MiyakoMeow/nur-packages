@@ -19,6 +19,7 @@
   pango,
   atk,
 }: let
+  execName = "lampghost";
   version = "0.2.2.1";
 
   # 平台特定的源码定义
@@ -50,7 +51,7 @@
   # 桌面图标配置
   desktopItem = makeDesktopItem {
     name = "lampghost";
-    exec = "lampghost";
+    exec = execName;
     icon = "lampghost";
     comment = "Offline & Cross-platform beatoraja lamp viewer and more";
     desktopName = "lampghost";
@@ -151,6 +152,7 @@ in
       homepage = "https://github.com/Catizard/lampghost";
       changelog = "https://github.com/Catizard/lampghost/releases/tag/v${version}";
       license = licenses.asl20;
+      mainProgram = execName;
       platforms = builtins.attrNames srcs;
       maintainers = [];
     };
