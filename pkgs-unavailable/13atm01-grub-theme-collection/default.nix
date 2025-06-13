@@ -1,3 +1,4 @@
+# 待修复点：包信息求值时不能依赖src中的信息。包名之类的信息应该是需要外部提供，那么大概就是像star-rail-grub-theme那样设个json。
 {
   lib,
   stdenvNoCC,
