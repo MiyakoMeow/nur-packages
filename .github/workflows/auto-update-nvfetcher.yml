@@ -40,7 +40,7 @@ jobs:
           sudo apt install gh -y
 
       - name: 🔑 登录 GitHub CLI
-        run: gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+        run: gh auth login --with-token <<< "${{ secrets.AUTOMERGE_TOKEN }}"
 
       - name: 🔄 运行更新
         id: update
