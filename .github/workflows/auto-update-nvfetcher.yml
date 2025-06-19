@@ -32,6 +32,11 @@ jobs:
       - name: Show nixpkgs version
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
+      # 生成唯一时间戳作为分支名后缀
+      - name: ⏰ 生成时间戳
+        id: timestamp
+        run: echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+
       - name: 🔄 运行更新
         id: update
         run: |
@@ -63,7 +68,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           title: "chore: auto-update packages via nvfetcher"
-          branch: "auto-update-$(date +%s)"
+          branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}" # 使用生成的时间戳
           commit-message: "chore: auto-update packages"
           body: |
             ⚡ 由 nvfetcher 自动生成的包更新
