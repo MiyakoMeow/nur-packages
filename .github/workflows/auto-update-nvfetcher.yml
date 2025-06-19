@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
 
       - name: ⚙️ 设置 Nix
         uses: cachix/install-nix-action@v31
@@ -26,7 +26,7 @@ jobs:
           nix_path: "${{ matrix.nixPath }}"
           extra_nix_config: |
             experimental-features = nix-command flakes
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            access-tokens = github.com=${{ secrets.AUTOMERGE_TOKEN }}
             extra-platforms = aarch64-linux
 
       - name: Show nixpkgs version
@@ -57,7 +57,7 @@ jobs:
 
           git config user.name "MiyakoMeow Bot - Update"
           git config user.email "miyakomeow-bot@github.noreply.com"
-          git remote set-url origin "https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+          git remote set-url origin "https://x-access-token:$AUTOMERGE_TOKEN@github.com/$GITHUB_REPOSITORY.git"
 
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./_sources) ]]; then
@@ -90,4 +90,4 @@ jobs:
               exit 0                                      # 正常退出避免工作流失败
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+          AUTOMERGE_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
