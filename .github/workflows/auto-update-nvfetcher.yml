@@ -1,10 +1,21 @@
-name: "Auto update packages"
+name: "Auto update packages with nvfetcher"
 on:
   workflow_dispatch:
   schedule:
     - cron: "55 9 * * *"
 jobs:
   auto-update:
+    strategy:
+      matrix:
+        # Set this to notify the global nur package registry that changes are
+        # available.
+        #
+        # The repo name as used in
+        # https://github.com/nix-community/NUR/blob/master/repos.json
+        nurRepo:
+          - MiyakoMeow/nur-packages
+        nixPath:
+          - nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixpkgs-unstable.tar.gz
     runs-on: ubuntu-latest
     env:
       GIT_SSL_NO_VERIFY: "true"
