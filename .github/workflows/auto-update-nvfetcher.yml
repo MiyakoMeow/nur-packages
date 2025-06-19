@@ -31,7 +31,7 @@ jobs:
 
           # 安装 nvfetcher (来自 nixpkgs)
           echo "🔧 安装 nvfetcher..."
-          nix-env -iA nixpkgs.nvfetcher
+          nix-env --install nvfetcher
 
           # 更新源文件
           echo "🔄 运行 nvfetcher..."
