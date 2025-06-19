@@ -44,6 +44,8 @@ jobs:
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./_sources) ]]; then
               echo "✅ 检测到更新!"
+              git config user.name "MiyakoMeow Bot - Update"
+              git config user.email "miyakomeow-bot@github.noreply.com"
               git add ./_sources
               git commit -m "chore: auto-update via nvfetcher"
               echo "::set-output name=has_updates::true" # 设置输出变量
