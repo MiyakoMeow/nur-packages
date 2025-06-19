@@ -1,6 +1,7 @@
 [13atm01-grub-theme-collection]
-src.github = "13atm01/GRUB-Theme"
-fetch.github = "13atm01/GRUB-Theme"
+src.git = "https://github.com/13atm01/GRUB-Theme.git"
+src.branch = "master"
+fetch.git = "https://github.com/13atm01/GRUB-Theme.git"
 
 [beatoraja]
 src.webpage = "https://www.mocha-repository.info/download.php"
@@ -13,5 +14,6 @@ src.regex = "freedownloadmanager_(.*)_amd64.deb"
 fetch.url = "http://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/freedownloadmanager_$ver_amd64.deb"
 
 [suisei-grub-theme]
-src.github = "kirakiraAZK/suiGRUB"
-fetch.github = "kirakiraAZK/suiGRUB"
+src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
+src.branch = "main"
+fetch.git = "https://github.com/kirakiraAZK/suiGRUB.git"
