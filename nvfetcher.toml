@@ -3,14 +3,15 @@ src.github = "13atm01/GRUB-Theme"
 fetch.github = "13atm01/GRUB-Theme"
 
 [beatoraja]
-src.url = "https://www.mocha-repository.info/download.php"
+src.webpage = "https://www.mocha-repository.info/download.php"
+src.regex = "beatoraja(.*)-modernchic.zip"
 fetch.url = "https://www.mocha-repository.info/download/beatoraja$ver-modernchic.zip"
 
-[fcitx5-pinyin-zhwiki]
-src.archpkg = "fcitx5-pinyin-zhwiki"
-src.prefix = "0.2.4."
-fetch.url = "https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.4/zhwiki-$ver.dict"
+[free-download-manager]
+src.webpage = "http://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager"
+src.regex = "freedownloadmanager_(.*)_amd64.deb"
+fetch.url = "http://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/freedownloadmanager_$ver_amd64.deb"
 
-[feeluown]
-src.pypi = "feeluown"
-fetch.pypi = "feeluown"
+[suisei-grub-theme]
+src.github = "kirakiraAZK/suiGRUB"
+fetch.github = "kirakiraAZK/suiGRUB"
