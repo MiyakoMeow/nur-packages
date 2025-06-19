@@ -1,11 +1,15 @@
+[13atm01-grub-theme-collection]
+src.github = "13atm01/GRUB-Theme"
+fetch.github = "13atm01/GRUB-Theme"
+
+[beatoraja]
+fetch.url = "https://www.mocha-repository.info/download/beatoraja$ver-modernchic.zip"
+
+[fcitx5-pinyin-zhwiki]
+src.archpkg = "fcitx5-pinyin-zhwiki"
+src.prefix = "0.2.4."
+fetch.url = "https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.2.4/zhwiki-$ver.dict"
+
 [feeluown]
 src.pypi = "feeluown"
 fetch.pypi = "feeluown"
-
-[fcitx5-pinyin-moegirl]
-src.github = "outloudvi/mw2fcitx"
-fetch.url = "https://github.com/outloudvi/mw2fcitx/releases/download/$ver/moegirl.dict"
-
-[fcitx5-pinyin-zhwiki]
-src.github = "felixonmars/fcitx5-pinyin-zhwiki"
-url = "https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/$ver/zhwiki-$date.dict"

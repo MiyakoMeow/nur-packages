@@ -1,69 +1,46 @@
-name: "Auto update packages with nvfetcher"
+name: Auto Update Packages
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "55 9 * * *"
-jobs:
-  auto-update:
-    strategy:
-      matrix:
-        # Set this to notify the global nur package registry that changes are
-        # available.
-        #
-        # The repo name as used in
-        # https://github.com/nix-community/NUR/blob/master/repos.json
-        nurRepo:
-          - MiyakoMeow/nur-packages
-        nixPath:
-          - nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixpkgs-unstable.tar.gz
-    runs-on: ubuntu-latest
-    env:
-      GIT_SSL_NO_VERIFY: "true"
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - cron: "0 12 * * *" # 每天 UTC 中午12点运行
+  workflow_dispatch: # 允许手动触发
 
-      - name: Install nix
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.update.outputs.has_updates }}
+    steps:
+      - name: 🛎️ 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ⚙️ 设置 Nix
         uses: cachix/install-nix-action@v31
         with:
-          nix_path: "${{ matrix.nixPath }}"
           extra_nix_config: |
-            experimental-features = nix-command flakes ca-derivations
+            experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-            extra-platforms = aarch64-linux
 
-      - name: Show nixpkgs version
-        run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
+      - name: 🔄 运行更新
+        id: update
+        run: |
+          chmod +x ./scripts/nvfetcher-update.sh
+          ./scripts/nvfetcher-update.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cache Nvfetcher Database
-        id: cache-nvfetcher
-        uses: actions/cache@v4
+      - name: 📦 创建 PR
+        if: steps.update.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v6
         with:
-          path: ~/.local/share/nvfetcher
-          key: nvfetcher
-
-      - name: Build nix packages
-        run: |
-          cat > secrets.toml <<EOF
-          [keys]
-          github = "${{ secrets.GITHUB_TOKEN }}"
-          EOF
-
-          nix run .#update
-
-          rm -f secrets.toml
-
-      - env:
-          API_TOKEN_GITHUB: ${{ secrets.AUTOMERGE_TOKEN }}
-        run: |
-          # https://github.com/cpina/github-action-push-to-another-repository/issues/75
-          git config --unset-all http.https://github.com/.extraheader
-          git config --global user.email "miyakomeow-bot@users.noreply.github.com"
-          git config --global user.name "miyakomeow-bot"
-
-          git add .
-          if git commit -m "auto: update packages" ; then
-            git remote remove origin
-            git remote add origin "https://miyakomeow-bot:$API_TOKEN_GITHUB@github.com/miyakomeow/nur-packages.git"
-            git push -u origin master
-          fi
+          title: "chore: auto-update packages via nvfetcher"
+          branch: "auto-update-$(date +%s)"
+          commit-message: "chore: auto-update packages"
+          body: |
+            ⚡ 由 nvfetcher 自动生成的包更新
+            **包含以下更新:**
+            $(git log -1 --pretty=%B)
+          labels: "automated, dependencies"
+          token: ${{ secrets.GITHUB_TOKEN }}
