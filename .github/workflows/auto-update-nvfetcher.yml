@@ -1,4 +1,4 @@
-name: Auto Update Packages
+name: Auto Update Packages via Nvfetcher
 on:
   schedule:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
