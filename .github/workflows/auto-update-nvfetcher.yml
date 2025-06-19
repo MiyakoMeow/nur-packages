@@ -21,20 +21,6 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
             extra-platforms = aarch64-linux
 
-      - name: Set nix daemon tmpdir path
-        run: |
-          sudo mkdir -p /nix/tmpdir
-          sudo chown "$(whoami)" /nix/tmpdir
-
-          cat > override.conf <<EOF
-          [Service]
-          Environment="TMPDIR=/nix/tmpdir"
-          EOF
-          sudo mkdir /etc/systemd/system/nix-daemon.service.d/
-          sudo mv override.conf /etc/systemd/system/nix-daemon.service.d/override.conf
-          sudo systemctl daemon-reload
-          sudo systemctl restart nix-daemon
-
       - name: Show nixpkgs version
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
@@ -52,7 +38,7 @@ jobs:
           github = "${{ secrets.GITHUB_TOKEN }}"
           EOF
 
-          env TMPDIR=/nix/tmpdir nix run .#update
+          nix run .#update
 
           rm -f secrets.toml
 
