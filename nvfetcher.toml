@@ -1,0 +1,11 @@
+[feeluown]
+src.pypi = "feeluown"
+fetch.pypi = "feeluown"
+
+[fcitx5-pinyin-moegirl]
+src.github = "outloudvi/mw2fcitx"
+fetch.url = "https://github.com/outloudvi/mw2fcitx/releases/download/$ver/moegirl.dict"
+
+[fcitx5-pinyin-zhwiki]
+src.github = "felixonmars/fcitx5-pinyin-zhwiki"
+url = "https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/$ver/zhwiki-$date.dict"

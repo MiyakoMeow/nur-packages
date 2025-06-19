@@ -1,0 +1,71 @@
+name: "Auto update packages"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "55 9 * * *"
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    env:
+      GIT_SSL_NO_VERIFY: "true"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: "${{ matrix.nixPath }}"
+          extra_nix_config: |
+            experimental-features = nix-command flakes ca-derivations
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set nix daemon tmpdir path
+        run: |
+          sudo mkdir -p /nix/tmpdir
+          sudo chown "$(whoami)" /nix/tmpdir
+
+          cat > override.conf <<EOF
+          [Service]
+          Environment="TMPDIR=/nix/tmpdir"
+          EOF
+          sudo mkdir /etc/systemd/system/nix-daemon.service.d/
+          sudo mv override.conf /etc/systemd/system/nix-daemon.service.d/override.conf
+          sudo systemctl daemon-reload
+          sudo systemctl restart nix-daemon
+
+      - name: Show nixpkgs version
+        run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
+
+      - name: Cache Nvfetcher Database
+        id: cache-nvfetcher
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/nvfetcher
+          key: nvfetcher
+
+      - name: Build nix packages
+        run: |
+          cat > secrets.toml <<EOF
+          [keys]
+          github = "${{ secrets.GITHUB_TOKEN }}"
+          EOF
+
+          env TMPDIR=/nix/tmpdir nix run .#update
+
+          rm -f secrets.toml
+
+      - env:
+          API_TOKEN_GITHUB: ${{ secrets.AUTOMERGE_TOKEN }}
+        run: |
+          # https://github.com/cpina/github-action-push-to-another-repository/issues/75
+          git config --unset-all http.https://github.com/.extraheader
+          git config --global user.email "miyakomeow-bot@users.noreply.github.com"
+          git config --global user.name "miyakomeow-bot"
+
+          git add .
+          if git commit -m "auto: update packages" ; then
+            git remote remove origin
+            git remote add origin "https://miyakomeow-bot:$API_TOKEN_GITHUB@github.com/miyakomeow/nur-packages.git"
+            git push -u origin master
+          fi

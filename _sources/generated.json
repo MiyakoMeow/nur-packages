@@ -1,0 +1,17 @@
+{
+    "feeluown": {
+        "cargoLocks": null,
+        "date": null,
+        "extract": null,
+        "name": "feeluown",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-r2Uy2gmPMbPKxRhikovWKTndLsRvixFHyOlxtUFLl44=",
+            "type": "url",
+            "url": "https://pypi.org/packages/source/f/feeluown/feeluown-4.1.12.tar.gz"
+        },
+        "version": "4.1.12"
+    }
+}
