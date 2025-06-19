@@ -39,8 +39,12 @@ jobs:
           sudo apt update
           sudo apt install gh -y
 
-      - name: 🔑 登录 GitHub CLI
-        run: gh auth login --with-token <<< "${{ secrets.AUTOMERGE_TOKEN }}"
+      - name: 🔑 配置 GitHub CLI
+        run: |
+          # 设置 GitHub CLI 认证
+          gh auth login --with-token <<< "${{ secrets.AUTOMERGE_TOKEN }}"
+          # 配置默认仓库
+          gh repo set-default $GITHUB_REPOSITORY
 
       - name: 🔄 运行更新
         id: update
@@ -51,11 +55,13 @@ jobs:
           # 运行nvfetcher
           nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml --keep-going
 
+          git config user.name "MiyakoMeow Bot - Update"
+          git config user.email "miyakomeow-bot@github.noreply.com"
+          git remote set-url origin "https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./_sources) ]]; then
               echo "✅ 检测到更新!"
-              git config user.name "MiyakoMeow Bot - Update"
-              git config user.email "miyakomeow-bot@github.noreply.com"
               git add ./_sources
               git commit -m "chore: auto-update via nvfetcher"
               
@@ -84,4 +90,4 @@ jobs:
               exit 0                                      # 正常退出避免工作流失败
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
