@@ -15,17 +15,12 @@ jobs:
       - name: Install Determinate Nix
         uses: DeterminateSystems/determinate-nix-action@v3
 
-      # - name: Update flake.lock
-      #   uses: DeterminateSystems/update-flake-lock@main
-      #   with:
-      #     token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
-
       - name: Update flake.lock
         if: ${{ github.event_name != 'pull_request' }}
         uses: DeterminateSystems/update-flake-lock@main
         with:
           path-to-flake-dir: "."
-          token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
           git-author-name: MiyakoMeow Bot Author
           git-author-email: github-actions[bot]@users.noreply.github.com
           git-committer-name: MiyakoMeow Bot Committer
