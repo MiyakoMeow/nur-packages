@@ -38,13 +38,8 @@ jobs:
           #!/usr/bin/env bash
           set -euo pipefail
 
-          # 安装 nvfetcher (来自 nixpkgs)
-          echo "🔧 安装 nvfetcher..."
-          nix-env -iA nixpkgs.nvfetcher
-
-          # 更新源文件
-          echo "🔄 运行 nvfetcher..."
-          nvfetcher -c ./nvfetcher.toml --build-dir ./pkgs/_sources
+          # 运行nvfetcher
+          nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml
 
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./pkgs/_sources) ]]; then
