@@ -3,6 +3,7 @@ src.github = "13atm01/GRUB-Theme"
 fetch.github = "13atm01/GRUB-Theme"
 
 [beatoraja]
+src.url = "https://www.mocha-repository.info/download.php"
 fetch.url = "https://www.mocha-repository.info/download/beatoraja$ver-modernchic.zip"
 
 [fcitx5-pinyin-zhwiki]
