@@ -6,6 +6,10 @@ on:
 
 jobs:
   update:
+    strategy:
+      matrix:
+        nixPath:
+          - nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixpkgs-unstable.tar.gz
     runs-on: ubuntu-latest
     outputs:
       has_updates: ${{ steps.update.outputs.has_updates }}
@@ -19,9 +23,14 @@ jobs:
       - name: ⚙️ 设置 Nix
         uses: cachix/install-nix-action@v31
         with:
+          nix_path: "${{ matrix.nixPath }}"
           extra_nix_config: |
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            extra-platforms = aarch64-linux
+
+      - name: Show nixpkgs version
+        run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
       - name: 🔄 运行更新
         id: update
