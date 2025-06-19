@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
 
           # 运行nvfetcher
-          nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml
+          nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml --keep-going
 
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./pkgs/_sources) ]]; then
