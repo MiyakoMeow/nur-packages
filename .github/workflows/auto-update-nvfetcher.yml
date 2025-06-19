@@ -60,13 +60,6 @@ jobs:
 
       - name: 📦 创建 PR
         if: steps.update.outputs.has_updates == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           title: "chore: auto-update packages via nvfetcher"
-          commit-message: "chore: auto-update packages"
-          body: |
-            ⚡ 由 nvfetcher 自动生成的包更新
-            **包含以下更新:**
-            $(git log -1 --pretty=%B)
-          labels: "automated, dependencies"
-          token: ${{ secrets.GITHUB_TOKEN }}
