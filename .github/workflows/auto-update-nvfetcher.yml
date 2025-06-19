@@ -42,9 +42,9 @@ jobs:
           nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml --keep-going
 
           # 检查是否有更新
-          if [[ -n $(git status --porcelain ./pkgs/_sources) ]]; then
+          if [[ -n $(git status --porcelain ./_sources) ]]; then
               echo "✅ 检测到更新!"
-              git add ./pkgs/_sources
+              git add ./_sources
               git commit -m "chore: auto-update via nvfetcher"
               echo "::set-output name=has_updates::true" # 设置输出变量
               exit 0
