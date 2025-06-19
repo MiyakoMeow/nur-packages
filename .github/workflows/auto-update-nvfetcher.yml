@@ -19,6 +19,7 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes ca-derivations
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            extra-platforms = aarch64-linux
 
       - name: Set nix daemon tmpdir path
         run: |
