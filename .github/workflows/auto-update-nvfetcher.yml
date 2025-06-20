@@ -46,8 +46,8 @@ jobs:
           # 运行nvfetcher
           nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml --keep-going
 
-          git config user.name "MiyakoMeow Bot - Update"
-          git config user.email "miyakomeow-bot@github.noreply.com"
+          git config user.name "MiyakoMeow Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./_sources) ]]; then
