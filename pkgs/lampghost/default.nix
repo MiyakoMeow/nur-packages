@@ -17,7 +17,6 @@
   tree,
   jq,
   glib, # 添加 glib 用于编译模式
-  glib-networking,
   gsettings-desktop-schemas, # 添加 GSettings 模式
   wrapGAppsHook, # 添加包装钩子
 }: let
