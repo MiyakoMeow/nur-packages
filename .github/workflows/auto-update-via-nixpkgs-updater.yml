@@ -21,69 +21,90 @@ jobs:
             substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
             trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-      - name: Generate update list
+      - name: Install dependencies
         run: |
-          # 创建缓存目录
-          mkdir -p ~/.cache/nixpkgs-update
+          # 安装必要工具
+          nix profile install nixpkgs#parallel nixpkgs#curl
 
-          # 使用正确的引用方式运行 nixpkgs-update
-          nix run github:ryantm/nixpkgs-update -- update-list --output ~/.cache/nixpkgs-update/update-list
+          # 安装 nixpkgs-update
+          nix run github:ryantm/nixpkgs-update -- --help >/dev/null
 
-          # 改进的包检测：支持多行定义和不同文件结构
+      - name: Find packages with updateScript
+        run: |
+          # 查找所有包含 updateScript 定义的包
           find pkgs -type f -name '*.nix' | while read -r file; do
-            # 检查文件中是否有 updateScript 定义
+            # 使用更健壮的检测逻辑
             if grep -q -E 'passthru.*updateScript|updateScript.*=' "$file"; then
-              # 从文件路径提取包名（支持多种目录结构）
+              # 提取包名 (从目录名)
               pkgname=$(dirname "$file" | xargs basename)
               echo "$pkgname"
             fi
-          done | sort -u > our-packages.txt
+          done | sort -u > package-list.txt
 
-          # 取交集：需要更新且在我们仓库中的包
-          grep -F -f our-packages.txt ~/.cache/nixpkgs-update/update-list > to-update.txt || true
+          echo "找到 $(wc -l < package-list.txt) 个需要更新的包:"
+          cat package-list.txt
+          echo "::set-output name=package_count::$(wc -l < package-list.txt)"
 
-          echo "检测到的包:"
-          cat our-packages.txt
-          echo "需要更新的包:"
-          cat to-update.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
-
-      - name: Run updates
+      - name: Run updates in parallel
+        id: update-run
         run: |
-          # 确保创建提交的用户信息
+          # 设置 Git 用户信息
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-          # 并行运行更新
-          if [ -s to-update.txt ]; then
-            cat to-update.txt | xargs -P 4 -I {} sh -c \
-              "echo '更新包: {}'; nix run github:ryantm/nixpkgs-update -- --package {} --commit || echo '更新 {} 失败'"
-            echo "::set-output name=has_updates::true" # 设置输出变量
-          else
-            echo "没有需要更新的包"
-            echo "::set-output name=has_updates::false" # 设置输出变量
-          fi
+          # 创建并行任务文件
+          echo "#!/usr/bin/env bash" > update-script.sh
+          echo "set -euo pipefail" >> update-script.sh
+          echo "pkg=\$1" >> update-script.sh
+          echo "echo \"尝试更新: \$pkg\"" >> update-script.sh
+          echo "nix run github:ryantm/nixpkgs-update -- update --package \"\$pkg\" --commit || echo \"更新 \$pkg 失败\"" >> update-script.sh
+          chmod +x update-script.sh
+
+          # 使用 GNU Parallel 并行运行
+          parallel --halt soon,fail=1 --joblog joblog.txt -j 4 ./update-script.sh :::: package-list.txt
+
+          # 统计成功/失败数量
+          success_count=$(grep -c "Finished update" joblog.txt || true)
+          fail_count=$(($(wc -l < package-list.txt) - success_count))
+          echo "::set-output name=success_count::$success_count"
+          echo "::set-output name=fail_count::$fail_count"
 
       - name: Create PR if changes
-        if: steps.update.outputs.has_updates == 'true'
+        if: steps.update-run.outputs.success_count != '0'
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
-          title: "chore: auto-update packages via nixpkgs-update $(date +'%Y-%m-%d')"
-          branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}"
-          delete-branch: true
+          branch: nix-updates-$(date +%s)
+          base: main
+          commit-message: "nix-update: 自动包更新"
+          title: "自动包更新 (${{ steps.update-run.outputs.success_count }} 个包)"
           body: |
-            本次更新包含以下包:
-            $(cat to-update.txt | sed 's/^/- /' || echo "无更新")
+            ## 更新结果
+            ✅ 成功更新: ${{ steps.update-run.outputs.success_count }} 个包
+            ❌ 失败更新: ${{ steps.update-run.outputs.fail_count }} 个包
+
+            ### 更新日志
+            <details>
+            <summary>点击查看详情</summary>
+
+            ```log
+            $(cat joblog.txt || echo "无更新日志")
+            ```
+            </details>
 
             由 GitHub Actions 自动生成
-          labels: "automated, dependencies"
+          labels: automated, dependencies
+          delete-branch: true
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           # Act like github-actions
-          commit-message: "chore: auto-update packages"
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+
+      - name: No updates notification
+        if: steps.update-run.outputs.success_count == '0'
+        run: |
+          echo "没有包需要更新"
+          # 可选: 添加通知逻辑
 
       - name: Enable Pull Request Automerge
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
