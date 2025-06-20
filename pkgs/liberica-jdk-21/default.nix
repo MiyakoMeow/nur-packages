@@ -1,6 +1,5 @@
 {
   lib,
-  sources,
   stdenv,
   fetchurl,
   autoPatchelfHook,

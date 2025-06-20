@@ -2,6 +2,7 @@
   stdenv,
   lib,
   pkgs,
+  sources,
   fetchurl,
   fetchzip,
   callPackage,
@@ -12,10 +13,10 @@
 }: let
   # 公共配置函数
   commonAttrs = {
-    pname,
-    version,
-    beatorajaVersion,
-    beatorajaArchive,
+    pname ? sources.beatoraja.pname,
+    version ? sources.beatoraja.version,
+    beatorajaVersion ? sources.beatoraja.version,
+    beatorajaArchive ? sources.beatoraja.src,
     meta,
     jarSource ? null,
     javaPackageWithJavaFX ? (pkgs.jdk.override {
@@ -210,30 +211,23 @@ in rec {
   beatoraja = {
     portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
     useOBSVkCapture ? false,
-  }: let
-    pname = "beatoraja";
-    version = "0.8.8";
-    beatorajaVersion = version;
-    beatorajaArchive = fetchurl {
-      url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
-      sha256 = "1rzp15ravq5vm14vb4y99hx7qlvvvbfrhkcrfhm26irc7rdv29h9";
-    };
-  in
+    ...
+  }:
     commonAttrs {
-      inherit pname version;
       meta = with lib; {
         description = "A modern BMS Player";
         homepage = "https://www.mocha-repository.info/download.php";
         license = licenses.gpl3;
         mainProgram = pname;
       };
-      inherit portaudioJava useOBSVkCapture beatorajaVersion beatorajaArchive;
+      inherit portaudioJava useOBSVkCapture;
     };
 
   # lr2oraja 包定义
   lr2oraja = {
     portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
     useOBSVkCapture ? false,
+    ...
   }: let
     pname = "lr2oraja";
     version = "build11611350155";
@@ -265,6 +259,7 @@ in rec {
   lr2oraja-endlessdream = {
     portaudioJava ? pkgs.callPackage ../portaudio-java/default.nix {},
     useOBSVkCapture ? false,
+    ...
   }: let
     pname = "lr2oraja-endlessdream";
     version = "0.2.1";

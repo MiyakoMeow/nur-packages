@@ -1,7 +1,6 @@
 {
   lib,
   stdenvNoCC,
-  sources,
   fetchurl,
   nix-update-script,
   ...

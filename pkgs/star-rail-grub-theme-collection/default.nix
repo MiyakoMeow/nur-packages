@@ -1,7 +1,6 @@
 # default.nix
 {
   lib,
-  sources,
   callPackage,
   ...
 }: let
