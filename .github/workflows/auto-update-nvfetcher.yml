@@ -62,16 +62,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
 
+      # 动态生成 PR 正文
+      - name: 📝 生成 PR 正文
+        if: steps.update.outputs.has_updates == 'true'
+        id: pr-body
+        run: |
+          # 获取最新提交信息
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          # 创建 PR 正文文件
+          echo "⚡ 由 nvfetcher 自动生成的包更新" > pr_body.md
+          echo "**包含以下更新:**" >> pr_body.md
+          echo "\`\`\`" >> pr_body.md
+          echo "$COMMIT_MSG" >> pr_body.md
+          echo "\`\`\`" >> pr_body.md
+
+          # 添加文件变更列表
+          echo "**更新的文件:**" >> pr_body.md
+          git diff --name-only HEAD^ HEAD -- pkgs/_sources | sed 's/^/- `/' | sed 's/$/`/' >> pr_body.md
+
+          # 输出文件内容供验证
+          cat pr_body.md
+
+          # 保存为输出
+          BODY_CONTENT=$(cat pr_body.md)
+          echo "body_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: 📦 创建 PR
         if: steps.update.outputs.has_updates == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           title: "chore: auto-update packages via nvfetcher"
-          branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}" # 使用生成的时间戳
+          branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}"
           commit-message: "chore: auto-update packages"
-          body: |
-            ⚡ 由 nvfetcher 自动生成的包更新
-            **包含以下更新:**
-            $(git log -1 --pretty=%B)
+          body: ${{ steps.pr-body.outputs.body_content }}
           labels: "automated, dependencies"
           token: ${{ secrets.AUTOMERGE_TOKEN }}
