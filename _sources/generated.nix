@@ -34,6 +34,14 @@
       sha256 = "sha256-BgqFe4nc5YgRMwJh2unEgePmXFAmUd7yKXFlWhrRklc=";
     };
   };
+  lampghost-bin = {
+    pname = "lampghost-bin";
+    version = "v0.2.3";
+    src = fetchurl {
+      url = "https://github.com/Catizard/lampghost/releases/download/v0.2.3/lampghost_linux";
+      sha256 = "sha256-Bx3BvFphbFVjXkZCCkQjtw5mUkW5XaoePzvrJ8CO2U8=";
+    };
+  };
   suisei-grub-theme = {
     pname = "suisei-grub-theme";
     version = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
