@@ -19,26 +19,20 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Install dependencies
-        run: |
-          # 使用正确的 Nix 命令安装工具
-          nix shell nixpkgs#nixpkgs-update nixpkgs#jq nixpkgs#curl -c bash -c "echo Dependencies installed"
-
       - name: Generate update list
         run: |
           # 创建缓存目录
           mkdir -p ~/.cache/nixpkgs-update
 
-          # 生成需要更新的包列表
-          nix run nixpkgs#nixpkgs-update -- update-list --output ~/.cache/nixpkgs-update/update-list
+          # 使用正确的引用方式运行 nixpkgs-update
+          nix run github:ryantm/nixpkgs-update -- update-list --output ~/.cache/nixpkgs-update/update-list
 
-          # 改进的包检测：支持多行定义
-          find pkgs -name '*.nix' -exec grep -l 'passthru' {} + | while read -r file; do
-            # 检查文件中是否有 updateScript 定义（支持多行格式）
-            if grep -A 5 'passthru' "$file" | grep -q 'updateScript'; then
-              # 提取包名（假设包目录名就是包名）
-              dir=$(dirname "$file")
-              pkgname=$(basename "$dir")
+          # 改进的包检测：支持多行定义和不同文件结构
+          find pkgs -type f -name '*.nix' | while read -r file; do
+            # 检查文件中是否有 updateScript 定义
+            if grep -q -E 'passthru.*updateScript|updateScript.*=' "$file"; then
+              # 从文件路径提取包名（支持多种目录结构）
+              pkgname=$(dirname "$file" | xargs basename)
               echo "$pkgname"
             fi
           done | sort -u > our-packages.txt
@@ -46,35 +40,53 @@ jobs:
           # 取交集：需要更新且在我们仓库中的包
           grep -F -f our-packages.txt ~/.cache/nixpkgs-update/update-list > to-update.txt || true
 
+          echo "检测到的包:"
+          cat our-packages.txt
           echo "需要更新的包:"
           cat to-update.txt
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
 
       - name: Run updates
         run: |
-          # 确保使用正确的 nixpkgs-update 路径
-          export PATH="$HOME/.nix-profile/bin:$PATH"
+          # 确保创建提交的用户信息
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
 
-          # 并行运行更新 (限制并发数)
+          # 并行运行更新
           if [ -s to-update.txt ]; then
             cat to-update.txt | xargs -P 4 -I {} sh -c \
-              "echo '更新包: {}'; nix run nixpkgs#nixpkgs-update -- --package {} --commit"
+              "echo '更新包: {}'; nix run github:ryantm/nixpkgs-update -- --package {} --commit || echo '更新 {} 失败'"
+            echo "::set-output name=has_updates::true" # 设置输出变量
           else
             echo "没有需要更新的包"
+            echo "::set-output name=has_updates::false" # 设置输出变量
           fi
 
       - name: Create PR if changes
-        uses: peter-evans/create-pull-request@v5
+        if: steps.update.outputs.has_updates == 'true'
+        id: create-pull-request
+        uses: peter-evans/create-pull-request@v7
         with:
-          branch: nix-updates-$(date +%s)
-          base: main # 根据您的主分支名称调整
-          commit-message: "nix-update: 自动包更新"
-          title: "自动包更新 $(date +'%Y-%m-%d')"
+          title: "chore: auto-update packages via nixpkgs-update $(date +'%Y-%m-%d')"
+          branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}"
+          delete-branch: true
           body: |
             本次更新包含以下包:
-            $ {{ cat to-update.txt | sed 's/^/- /' }}
+            $(cat to-update.txt | sed 's/^/- /' || echo "无更新")
 
             由 GitHub Actions 自动生成
-          labels: automated, dependencies
-          delete-branch: true
+          labels: "automated, dependencies"
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
+          # Act like github-actions
+          commit-message: "chore: auto-update packages"
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+
+      - name: Enable Pull Request Automerge
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
+          pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
+          merge-method: squash
