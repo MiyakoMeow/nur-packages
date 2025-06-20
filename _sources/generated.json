@@ -55,6 +55,21 @@
         },
         "version": "v0.2.3"
     },
+    "lampghost-bin": {
+        "cargoLocks": null,
+        "date": null,
+        "extract": null,
+        "name": "lampghost-bin",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-Bx3BvFphbFVjXkZCCkQjtw5mUkW5XaoePzvrJ8CO2U8=",
+            "type": "url",
+            "url": "https://github.com/Catizard/lampghost/releases/download/v0.2.3/lampghost_linux"
+        },
+        "version": "v0.2.3"
+    },
     "suisei-grub-theme": {
         "cargoLocks": null,
         "date": "2024-11-01",
