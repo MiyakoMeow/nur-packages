@@ -14,10 +14,12 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+            substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
+            trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Generate update list
         run: |
@@ -25,7 +27,7 @@ jobs:
           mkdir -p ~/.cache/nixpkgs-update
 
           # 使用正确的引用方式运行 nixpkgs-update
-          nix run --option extra-substituters 'https://nix-community.cachix.org/' --option extra-trusted-public-keys 'nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=' github:ryantm/nixpkgs-update -- update-list --output ~/.cache/nixpkgs-update/update-list
+          nix run github:ryantm/nixpkgs-update -- update-list --output ~/.cache/nixpkgs-update/update-list
 
           # 改进的包检测：支持多行定义和不同文件结构
           find pkgs -type f -name '*.nix' | while read -r file; do
@@ -56,7 +58,7 @@ jobs:
           # 并行运行更新
           if [ -s to-update.txt ]; then
             cat to-update.txt | xargs -P 4 -I {} sh -c \
-              "echo '更新包: {}'; nix run --option extra-substituters 'https://nix-community.cachix.org/' --option extra-trusted-public-keys 'nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=' github:ryantm/nixpkgs-update -- --package {} --commit || echo '更新 {} 失败'"
+              "echo '更新包: {}'; nix run github:ryantm/nixpkgs-update -- --package {} --commit || echo '更新 {} 失败'"
             echo "::set-output name=has_updates::true" # 设置输出变量
           else
             echo "没有需要更新的包"
