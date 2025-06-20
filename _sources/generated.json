@@ -1,9 +1,9 @@
 {
-    "acpi-ec": {
+    "13atm01-grub-theme-collection": {
         "cargoLocks": null,
-        "date": null,
+        "date": "2025-06-15",
         "extract": null,
-        "name": "acpi-ec",
+        "name": "13atm01-grub-theme-collection",
         "passthru": null,
         "pinned": false,
         "src": {
@@ -11,28 +11,47 @@
             "fetchSubmodules": false,
             "leaveDotGit": false,
             "name": null,
-            "owner": "musikid",
-            "repo": "acpi_ec",
-            "rev": "v1.0.4",
-            "sha256": "sha256-gDcEzZKtHMULtTtJSDTRH1W9otSB6IC0E6EBF9j6F7Q=",
+            "rev": "f4d764cab6bed5ab29e31965cca59420cc84ee0a",
+            "sha256": "sha256-yceSIVxVpUNUDFjMXGYGkD4qyMRajU7TyDg/gl2NmAs=",
             "sparseCheckout": [],
-            "type": "github"
+            "type": "git",
+            "url": "https://github.com/13atm01/GRUB-Theme.git"
         },
-        "version": "v1.0.4"
+        "version": "f4d764cab6bed5ab29e31965cca59420cc84ee0a"
     },
-    "adspower": {
+    "beatoraja": {
         "cargoLocks": null,
         "date": null,
         "extract": null,
-        "name": "adspower",
+        "name": "beatoraja",
         "passthru": null,
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-odERZUvdne2dGlPgeVo7vX1oOHeDfcmAdhsK95uTqHA=",
+            "sha256": "sha256-CSaxWz4sRyMqdJlNmN3ae1N8OkzJk7VJqLvgrXIJ9+c=",
             "type": "url",
-            "url": "https://version.adspower.net/software/linux-x64-global/AdsPower-Global-7.3.26-x64.deb"
+            "url": "https://www.mocha-repository.info/download/beatoraja0.8.8-modernchic.zip"
         },
-        "version": "7.3.26"
+        "version": "0.8.8"
+    },
+    "suisei-grub-theme": {
+        "cargoLocks": null,
+        "date": "2024-11-01",
+        "extract": null,
+        "name": "suisei-grub-theme",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "rev": "2ea338454810e6fd3ad04166bc84c576e29a6bea",
+            "sha256": "sha256-besErd3N+iVGiReYGzo6H3JKsgQOyRaRbe6E0wKKW54=",
+            "sparseCheckout": [],
+            "type": "git",
+            "url": "https://github.com/kirakiraAZK/suiGRUB.git"
+        },
+        "version": "2ea338454810e6fd3ad04166bc84c576e29a6bea"
     }
 }
