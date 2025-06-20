@@ -114,12 +114,6 @@ in
     ];
 
     preBuild = ''
-      # 编译 GSettings 模式
-      echo "=== 编译 GSettings 模式 ==="
-      mkdir -p $out/share/gsettings-schemas/${pname}-${version}
-      cp -r ${gsettings-desktop-schemas}/share/gsettings-schemas/gsettings-desktop-schemas-* $out/share/gsettings-schemas/${pname}-${version}/
-      glib-compile-schemas $out/share/gsettings-schemas/${pname}-${version}
-
       # 创建目标目录并直接复制资源内容
       mkdir -p frontend/dist
       cp -r ${frontend}/* frontend/dist
@@ -132,14 +126,6 @@ in
 
     buildPhase = ''
       runHook preBuild
-
-      # 设置 GSettings 环境变量
-      export XDG_DATA_DIRS=$out/share/gsettings-schemas/${pname}-${version}:${gsettings-desktop-schemas}/share/gsettings-schemas/gsettings-desktop-schemas-${gsettings-desktop-schemas.version}:$XDG_DATA_DIRS
-      echo "XDG_DATA_DIRS = $XDG_DATA_DIRS"
-      export GIO_MODULE_DIR="${glib-networking}/lib/gio/modules/";
-
-      # ===== 启用Wails调试 =====
-      export WAILSDEBUG=1  # 启用详细日志
 
       # ===== 构建 =====
       export HOME=$(mktemp -d)
@@ -156,22 +142,16 @@ in
       chmod +x $out/bin/$pname
       cp -r frontend $out/bin
 
+      # 安装GSettings模式（移动到安装阶段）
+      echo "=== 安装GSettings模式 ==="
+      mkdir -p $out/share/gsettings-schemas/${pname}-${version}
+      cp -r ${gsettings-desktop-schemas}/share/gsettings-schemas/* $out/share/gsettings-schemas/${pname}-${version}/
+      glib-compile-schemas $out/share/gsettings-schemas/${pname}-${version}
+
       # 安装桌面文件
       copyDesktopItems
 
       runHook postInstall
-    '';
-
-    # 使用 wrapGAppsHook 自动设置运行时环境
-    dontWrapGApps = false; # 启用自动包装
-
-    # 确保桌面文件也被正确包装
-    preFixup = ''
-      gappsWrapperArgs+=(
-        --prefix XDG_DATA_DIRS : "$out/share/gsettings-schemas/${pname}-${version}"
-        --prefix XDG_DATA_DIRS : "${gsettings-desktop-schemas}/share/gsettings-schemas/gsettings-desktop-schemas-${gsettings-desktop-schemas.version}"
-        --prefix GIO_MODULE_DIR : "${glib-networking}/lib/gio/modules/"
-      )
     '';
 
     # 桌面条目配置
