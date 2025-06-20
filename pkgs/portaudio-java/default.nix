@@ -1,7 +1,6 @@
 {
   lib,
   stdenv,
-  sources,
   portaudio,
   jdk,
   cmake,
@@ -9,8 +8,15 @@
   ...
 }:
 stdenv.mkDerivation {
-  inherit (sources.portaudio-java) pname src;
+  pname = "portaudio-java";
   version = "dev";
+  src = builtins.fetchGit {
+    url = "https://github.com/philburk/portaudio-java.git";
+
+    rev = "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b";
+
+    ref = "main";
+  };
 
   nativeBuildInputs = [cmake gradle jdk];
   buildInputs = [portaudio];
