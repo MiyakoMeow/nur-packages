@@ -17,17 +17,9 @@ fetch.url = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadman
 src.github = "Catizard/lampghost"
 fetch.github = "Catizard/lampghost"
 
-[star-rail-grub-themes]
-# 源信息
-src.github = "voidlhf/StarRailGrubThemes"
-
-[star-rail-grub-themes.fetch.github]
-# 获取最新 Release 中的 tar.gz 文件（排除源码包）
-asset_regex = "^(?!.*(source|src)).*.tar.gz"
-owner = "voidlhf"
-repo = "StarRailGrubThemes"
-type = "release"
-multiple_assets = true
+[lampghost-bin]
+src.github = "Catizard/lampghost"
+fetch.url = "https://github.com/Catizard/lampghost/releases/download/$ver/lampghost_linux"
 
 [suisei-grub-theme]
 src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
