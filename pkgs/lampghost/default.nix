@@ -94,7 +94,7 @@ in
   buildGoModule {
     inherit pname version src;
 
-    vendorHash = "sha256-LI8E8gzhtxiN1joftr0QJURW74CYzHUvkMBPJodchVM=";
+    vendorHash = "sha256-ViR7FfEPjQEMfcHcAVg3Ru3VwbbrE+X22nWG/x2OKlQ=";
 
     nativeBuildInputs = [
       wails
