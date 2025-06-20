@@ -79,7 +79,7 @@ jobs:
 
           # 添加文件变更列表
           echo "**更新的文件:**" >> pr_body.md
-          git diff --name-only HEAD^ HEAD -- pkgs/_sources | sed 's/^/- `/' | sed 's/$/`/' >> pr_body.md
+          git diff --name-only HEAD^ HEAD -- _sources | sed 's/^/- `/' | sed 's/$/`/' >> pr_body.md
 
           # 输出文件内容供验证
           cat pr_body.md
