@@ -2,6 +2,9 @@ name: Auto Update Packages via Nvfetcher
 on:
   schedule:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
+  push:
+    paths:
+      - "nvfetcher.toml" # 在包定义文件有更改时触发
   workflow_dispatch: # 允许手动触发
 
 jobs:
