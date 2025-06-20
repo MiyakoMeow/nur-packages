@@ -1,0 +1,80 @@
+name: Auto Update Packages via nixpkgs-update
+on:
+  schedule:
+    - cron: "0 12 * * 0" # 每周日 UTC 12:00 运行
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Install dependencies
+        run: |
+          # 使用正确的 Nix 命令安装工具
+          nix shell nixpkgs#nixpkgs-update nixpkgs#jq nixpkgs#curl -c bash -c "echo Dependencies installed"
+
+      - name: Generate update list
+        run: |
+          # 创建缓存目录
+          mkdir -p ~/.cache/nixpkgs-update
+
+          # 生成需要更新的包列表
+          nix run nixpkgs#nixpkgs-update -- update-list --output ~/.cache/nixpkgs-update/update-list
+
+          # 改进的包检测：支持多行定义
+          find pkgs -name '*.nix' -exec grep -l 'passthru' {} + | while read -r file; do
+            # 检查文件中是否有 updateScript 定义（支持多行格式）
+            if grep -A 5 'passthru' "$file" | grep -q 'updateScript'; then
+              # 提取包名（假设包目录名就是包名）
+              dir=$(dirname "$file")
+              pkgname=$(basename "$dir")
+              echo "$pkgname"
+            fi
+          done | sort -u > our-packages.txt
+
+          # 取交集：需要更新且在我们仓库中的包
+          grep -F -f our-packages.txt ~/.cache/nixpkgs-update/update-list > to-update.txt || true
+
+          echo "需要更新的包:"
+          cat to-update.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run updates
+        run: |
+          # 确保使用正确的 nixpkgs-update 路径
+          export PATH="$HOME/.nix-profile/bin:$PATH"
+
+          # 并行运行更新 (限制并发数)
+          if [ -s to-update.txt ]; then
+            cat to-update.txt | xargs -P 4 -I {} sh -c \
+              "echo '更新包: {}'; nix run nixpkgs#nixpkgs-update -- --package {} --commit"
+          else
+            echo "没有需要更新的包"
+          fi
+
+      - name: Create PR if changes
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: nix-updates-$(date +%s)
+          base: main # 根据您的主分支名称调整
+          commit-message: "nix-update: 自动包更新"
+          title: "自动包更新 $(date +'%Y-%m-%d')"
+          body: |
+            本次更新包含以下包:
+            $ {{ cat to-update.txt | sed 's/^/- /' }}
+
+            由 GitHub Actions 自动生成
+          labels: automated, dependencies
+          delete-branch: true

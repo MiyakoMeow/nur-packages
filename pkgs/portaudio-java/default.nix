@@ -5,6 +5,7 @@
   jdk,
   cmake,
   gradle,
+  nix-update-script,
   ...
 }:
 stdenv.mkDerivation {
@@ -12,9 +13,7 @@ stdenv.mkDerivation {
   version = "dev";
   src = builtins.fetchGit {
     url = "https://github.com/philburk/portaudio-java.git";
-
     rev = "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b";
-
     ref = "main";
   };
 
@@ -72,6 +71,12 @@ stdenv.mkDerivation {
       return 1
     fi
   '';
+
+  passthru = {
+    updateScript =
+      nix-update-script {
+      };
+  };
 
   meta = with lib; {
     description = "Java wrapper for PortAudio audio library";
