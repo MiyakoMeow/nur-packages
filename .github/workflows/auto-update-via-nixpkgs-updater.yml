@@ -20,33 +20,26 @@ jobs:
             experimental-features = nix-command flakes
             substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
             trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            use-sqlite-wal = false
-
-      - name: Create writable cache directory
-        run: |
-          # 创建可写的缓存目录
-          sudo mkdir -p /tmp/nix-fetcher-cache
-          sudo chmod a+rwx /tmp/nix-fetcher-cache
 
       - name: Install dependencies
         run: |
           # 安装必要工具
-          nix profile install nixpkgs#parallel nixpkgs#curl
+          nix profile install nixpkgs#parallel nixpkgs#curl nixpkgs#jq
 
           # 安装 nixpkgs-update
           nix run github:ryantm/nixpkgs-update -- --help >/dev/null
 
       - name: Find packages with updateScript
         run: |
-          # 查找所有包含 updateScript 定义的包
-          find pkgs -type f -name '*.nix' | while read -r file; do
-            # 使用更健壮的检测逻辑
-            if grep -q -E 'passthru.*updateScript|updateScript.*=' "$file"; then
-              # 提取包名 (从目录名)
-              pkgname=$(dirname "$file" | xargs basename)
-              echo "$pkgname"
+          # 使用Nix内置方法检测updateScript
+          nix eval --json .# --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
+
+          # 过滤出有updateScript的包
+          while IFS= read -r pkg; do
+            if nix eval --json ".#$pkg.passthru.updateScript or null" | jq -e '. != null' >/dev/null; then
+              echo "$pkg"
             fi
-          done | sort -u > package-list.txt
+          done < all-packages.txt > package-list.txt
 
           echo "找到 $(wc -l < package-list.txt) 个需要更新的包:"
           cat package-list.txt
@@ -66,9 +59,9 @@ jobs:
           pkg="$1"
           echo "尝试更新: $pkg"
 
-          # 为每个包创建独立的缓存目录
-          export NIX_FETCHER_CACHE="/tmp/nix-fetcher-cache/$pkg.sqlite"
-          mkdir -p $(dirname "$NIX_FETCHER_CACHE")
+          # 使用临时HOME目录解决权限问题
+          export OLD_HOME="$HOME"
+          export HOME=$(mktemp -d)
 
           # 运行更新
           nix run github:ryantm/nixpkgs-update -- update --package "$pkg" --commit || {
@@ -76,6 +69,10 @@ jobs:
             # 记录失败的包
             echo "$pkg" >> failed-packages.txt
           }
+
+          # 恢复原始HOME并清理临时目录
+          export HOME="$OLD_HOME"
+          rm -rf "$HOME"
           EOF
           chmod +x update-script.sh
 
@@ -138,8 +135,3 @@ jobs:
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
           merge-method: squash
-
-      - name: Cleanup cache
-        run: |
-          # 清理缓存以释放空间
-          sudo rm -rf /tmp/nix-fetcher-cache
