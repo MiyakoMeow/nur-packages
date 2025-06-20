@@ -75,5 +75,5 @@ jobs:
 
       - name: Trigger NUR update
         # Don't replace <YOUR_REPO_NAME> here!
-        if: ${{ matrix.nurRepo != '<YOUR_REPO_NAME>' }}
+        if: ${{ matrix.nurRepo != '<YOUR_REPO_NAME>' && false }}
         run: curl -XPOST "https://nur-update.nix-community.org/update?repo=${{ matrix.nurRepo }}"
