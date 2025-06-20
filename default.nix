@@ -18,8 +18,17 @@
   packagesDir = ./pkgs;
   packageNames = builtins.attrNames (builtins.readDir packagesDir);
 
+  # 导入 nvfetcher 生成的源
+  sources = import ./_sources/generated.nix {
+    inherit (pkgs) fetchurl fetchgit fetchFromGitHub dockerTools;
+  };
+
   # 导入单个包或包集合（返回原始结果）
-  importPackage = path: pkgs.callPackage path {};
+  importPackage = path:
+    pkgs.callPackage path {
+      # 显式传递 sources 参数
+      inherit sources;
+    };
 
   # 辅助函数：递归收集所有 derivations 并保留原始名称
   lib =

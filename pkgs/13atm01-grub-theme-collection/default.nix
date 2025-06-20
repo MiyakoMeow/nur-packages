@@ -2,8 +2,7 @@
   lib,
   stdenvNoCC,
   fetchFromGitHub,
-  python3,
-  writeText,
+  ...
 }: let
   # 仓库信息
   owner = "13atm01";

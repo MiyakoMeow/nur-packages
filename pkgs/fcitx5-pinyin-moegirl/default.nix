@@ -3,6 +3,7 @@
   stdenvNoCC,
   fetchurl,
   nix-update-script,
+  ...
 }: let
   pname = "fcitx5-pinyin-moegirl";
   date = "20250309";

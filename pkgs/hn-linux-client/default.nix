@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  sources,
   fetchurl,
   autoPatchelfHook,
   makeWrapper,
@@ -11,6 +12,7 @@
   gdk-pixbuf,
   curl,
   coreutils,
+  ...
 }: let
   # 版本标识符（从URL中提取）
   pkgId = "64ac0526-0589-4ec9-9142-06db38ef3da2";

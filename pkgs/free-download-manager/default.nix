@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  sources,
   fetchurl,
   autoPatchelfHook,
   dpkg,
@@ -14,6 +15,7 @@
   unixODBC,
   postgresql,
   mysql80,
+  ...
 }:
 stdenv.mkDerivation rec {
   pname = "free-download-manager";

@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  sources,
   fetchurl,
   autoPatchelfHook,
   makeDesktopItem,
@@ -18,6 +19,7 @@
   cairo,
   pango,
   atk,
+  ...
 }: let
   execName = "lampghost";
   version = "0.2.2.1";

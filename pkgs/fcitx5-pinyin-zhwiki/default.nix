@@ -1,8 +1,10 @@
 {
   lib,
   stdenvNoCC,
+  sources,
   fetchurl,
   nix-update-script,
+  ...
 }: let
   pname = "fcitx5-pinyin-zhwiki";
   version = "0.2.5";

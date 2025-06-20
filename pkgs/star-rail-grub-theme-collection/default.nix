@@ -1,7 +1,9 @@
 # default.nix
 {
   lib,
+  sources,
   callPackage,
+  ...
 }: let
   # 从本地文件读取主题信息
   theme-info = lib.importJSON ./themes.json;

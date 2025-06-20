@@ -8,6 +8,7 @@
   makeDesktopItem,
   copyDesktopItems,
   unzip,
+  ...
 }: let
   # 公共配置函数
   commonAttrs = {

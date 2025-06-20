@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  ...
 }:
 pkgs.llvmPackages.clang.overrideAttrs (old: {
   installPhase =

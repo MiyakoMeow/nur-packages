@@ -1,5 +1,6 @@
 {
   lib,
+  sources,
   stdenv,
   fetchurl,
   autoPatchelfHook,
@@ -12,6 +13,7 @@
   libXrender,
   libXi,
   libXtst,
+  ...
 }: let
   # JDK 版本配置
   version = "21.0.7+9";

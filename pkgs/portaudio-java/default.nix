@@ -1,11 +1,13 @@
 {
   stdenv,
+  sources,
   portaudio,
   jdk,
   cmake,
   gradle,
   lib,
   useGHProxy ? false, # 可选参数：是否使用镜像
+  ...
 }: let
   prefix =
     if useGHProxy

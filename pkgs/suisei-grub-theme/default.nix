@@ -1,21 +1,14 @@
 {
   lib,
   pkgs,
-  fetchFromGitHub,
+  sources,
   nix-update-script,
 }: let
   version = "dev";
 in
   pkgs.stdenv.mkDerivation {
-    name = "grub-theme-suisei";
     inherit version;
-
-    src = fetchFromGitHub {
-      owner = "kirakiraAZK";
-      repo = "suiGRUB";
-      rev = "main";
-      hash = "sha256-besErd3N+iVGiReYGzo6H3JKsgQOyRaRbe6E0wKKW54=";
-    };
+    inherit (sources.suisei-grub-theme) pname src;
 
     installPhase = ''
       mkdir $out
