@@ -20,6 +20,14 @@ jobs:
             experimental-features = nix-command flakes
             substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
             trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            use-sqlite-wal = false
+            fetcher-cache-dir = /tmp/nix-fetcher-cache
+
+      - name: Create writable cache directory
+        run: |
+          # 创建可写的缓存目录
+          sudo mkdir -p /tmp/nix-fetcher-cache
+          sudo chmod a+rwx /tmp/nix-fetcher-cache
 
       - name: Install dependencies
         run: |
@@ -52,22 +60,37 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-          # 创建并行任务文件
-          echo "#!/usr/bin/env bash" > update-script.sh
-          echo "set -euo pipefail" >> update-script.sh
-          echo "pkg=\$1" >> update-script.sh
-          echo "echo \"尝试更新: \$pkg\"" >> update-script.sh
-          echo "nix run github:ryantm/nixpkgs-update -- update --package \"\$pkg\" --commit || echo \"更新 \$pkg 失败\"" >> update-script.sh
+          # 创建并行任务脚本
+          cat > update-script.sh <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          pkg="$1"
+          echo "尝试更新: $pkg"
+
+          # 为每个包创建独立的缓存目录
+          export NIX_FETCHER_CACHE="/tmp/nix-fetcher-cache/$pkg.sqlite"
+          mkdir -p $(dirname "$NIX_FETCHER_CACHE")
+
+          # 运行更新
+          nix run github:ryantm/nixpkgs-update -- update --package "$pkg" --commit || {
+            echo "更新 $pkg 失败"
+            # 记录失败的包
+            echo "$pkg" >> failed-packages.txt
+          }
+          EOF
           chmod +x update-script.sh
 
-          # 使用 GNU Parallel 并行运行
-          parallel --halt soon,fail=1 --joblog joblog.txt -j 4 ./update-script.sh :::: package-list.txt
+          # 初始化失败包列表
+          touch failed-packages.txt
 
-          # 统计成功/失败数量
-          success_count=$(grep -c "Finished update" joblog.txt || true)
-          fail_count=$(($(wc -l < package-list.txt) - success_count))
+          # 使用 GNU Parallel 并行运行
+          parallel --joblog joblog.txt -j 4 ./update-script.sh :::: package-list.txt
+
+          # 统计成功数量
+          success_count=$(($(wc -l < package-list.txt) - $(wc -l < failed-packages.txt | awk '{print $1}')))
           echo "::set-output name=success_count::$success_count"
-          echo "::set-output name=fail_count::$fail_count"
+          echo "::set-output name=fail_count::$(wc -l < failed-packages.txt | awk '{print $1}')"
+          echo "::set-output name=failed_packages::$(cat failed-packages.txt | tr '\n' ' ')"
 
       - name: Create PR if changes
         if: steps.update-run.outputs.success_count != '0'
@@ -82,6 +105,9 @@ jobs:
             ## 更新结果
             ✅ 成功更新: ${{ steps.update-run.outputs.success_count }} 个包
             ❌ 失败更新: ${{ steps.update-run.outputs.fail_count }} 个包
+
+            ### 失败包列表
+            ${{ steps.update-run.outputs.failed_packages }}
 
             ### 更新日志
             <details>
@@ -113,3 +139,8 @@ jobs:
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
           merge-method: squash
+
+      - name: Cleanup cache
+        run: |
+          # 清理缓存以释放空间
+          sudo rm -rf /tmp/nix-fetcher-cache
