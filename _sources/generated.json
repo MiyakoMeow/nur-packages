@@ -70,6 +70,26 @@
         },
         "version": "v0.2.3"
     },
+    "portaudio-java": {
+        "cargoLocks": null,
+        "date": "2023-07-04",
+        "extract": null,
+        "name": "portaudio-java",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "rev": "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b",
+            "sha256": "sha256-t+Pqtgstd1uJjvD4GKomZHMeSECNLeQJOrz97o+lV2Q=",
+            "sparseCheckout": [],
+            "type": "git",
+            "url": "https://github.com/philburk/portaudio-java.git"
+        },
+        "version": "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b"
+    },
     "suisei-grub-theme": {
         "cargoLocks": null,
         "date": "2024-11-01",
