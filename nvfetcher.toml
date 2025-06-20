@@ -17,3 +17,7 @@ fetch.url = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadman
 src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
 src.branch = "main"
 fetch.git = "https://github.com/kirakiraAZK/suiGRUB.git"
+
+[lampghost]
+src.github = "Catizard/lampghost"
+fetch.github = "Catizard/lampghost"
