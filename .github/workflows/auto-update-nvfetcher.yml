@@ -92,14 +92,24 @@ jobs:
 
       - name: 📦 创建 PR
         if: steps.update.outputs.has_updates == 'true'
+        id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
           title: "chore: auto-update packages via nvfetcher"
           branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}"
-          commit-message: "chore: auto-update packages"
+          delete-branch: true
           body: ${{ steps.pr-body.outputs.body_content }}
           labels: "automated, dependencies"
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           # Act like github-actions
+          commit-message: "chore: auto-update packages"
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+
+      - name: Enable Pull Request Automerge
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
+          pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
+          merge-method: squash
