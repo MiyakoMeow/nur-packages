@@ -1,12 +1,12 @@
 {
   lib,
-  pkgs,
+  stdenvNoCC,
   sources,
   nix-update-script,
 }: let
   version = "dev";
 in
-  pkgs.stdenv.mkDerivation {
+  stdenvNoCC.mkDerivation {
     inherit version;
     inherit (sources.suisei-grub-theme) pname src;
 
