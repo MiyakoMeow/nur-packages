@@ -21,6 +21,11 @@ fetch.github = "Catizard/lampghost"
 src.github = "Catizard/lampghost"
 fetch.url = "https://github.com/Catizard/lampghost/releases/download/$ver/lampghost_linux"
 
+[portaudio-java]
+src.git = "https://github.com/philburk/portaudio-java.git"
+src.branch = "main"
+fetch.git = "https://github.com/philburk/portaudio-java.git"
+
 [suisei-grub-theme]
 src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
 src.branch = "main"
