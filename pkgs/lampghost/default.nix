@@ -1,8 +1,8 @@
 {
   lib,
   stdenv,
+  sources,
   nodejs,
-  fetchFromGitHub,
   fetchNpmDeps,
   npmHooks,
   buildGoModule,
@@ -21,15 +21,10 @@
   gsettings-desktop-schemas, # 添加 GSettings 模式
   wrapGAppsHook, # 添加包装钩子
 }: let
-  pname = "lampghost";
-  version = "0.2.1";
+  pname = sources.lampghost.pname;
+  version = sources.lampghost.version;
 
-  src = fetchFromGitHub {
-    owner = "Catizard";
-    repo = pname;
-    rev = "v${version}";
-    hash = "sha256-0g5fISqjOnKbAkCBCb3YuQTstV4ZQGC2+9vYjBYRbmc=";
-  };
+  src = sources.lampghost.src;
 
   # 元信息
   metaCommon = with lib; {
