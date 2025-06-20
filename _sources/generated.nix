@@ -23,6 +23,17 @@
       sha256 = "sha256-CSaxWz4sRyMqdJlNmN3ae1N8OkzJk7VJqLvgrXIJ9+c=";
     };
   };
+  lampghost = {
+    pname = "lampghost";
+    version = "v0.2.3";
+    src = fetchFromGitHub {
+      owner = "Catizard";
+      repo = "lampghost";
+      rev = "v0.2.3";
+      fetchSubmodules = false;
+      sha256 = "sha256-BgqFe4nc5YgRMwJh2unEgePmXFAmUd7yKXFlWhrRklc=";
+    };
+  };
   suisei-grub-theme = {
     pname = "suisei-grub-theme";
     version = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
