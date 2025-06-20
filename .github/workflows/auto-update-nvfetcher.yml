@@ -32,19 +32,10 @@ jobs:
       - name: Show nixpkgs version
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
-      - name: 📦 安装 GitHub CLI
-        run: |
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-          sudo apt update
-          sudo apt install gh -y
-
-      - name: 🔑 配置 GitHub CLI
-        run: |
-          # 设置 GitHub CLI 认证
-          gh auth login --with-token <<< "${{ secrets.AUTOMERGE_TOKEN }}"
-          # 配置默认仓库
-          gh repo set-default $GITHUB_REPOSITORY
+      # 生成唯一时间戳作为分支名后缀
+      - name: ⏰ 生成时间戳
+        id: timestamp
+        run: echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: 🔄 运行更新
         id: update
@@ -57,37 +48,30 @@ jobs:
 
           git config user.name "MiyakoMeow Bot - Update"
           git config user.email "miyakomeow-bot@github.noreply.com"
-          git remote set-url origin "https://x-access-token:$AUTOMERGE_TOKEN@github.com/$GITHUB_REPOSITORY.git"
 
           # 检查是否有更新
           if [[ -n $(git status --porcelain ./_sources) ]]; then
               echo "✅ 检测到更新!"
               git add ./_sources
               git commit -m "chore: auto-update via nvfetcher"
-              
-              # 创建时间戳分支名
-              TIMESTAMP=$(date +%s)
-              BRANCH_NAME="auto-update-$TIMESTAMP"
-              
-              # 创建新分支并推送
-              git checkout -b "$BRANCH_NAME"
-              git push origin "$BRANCH_NAME"
-              
-              # 创建 PR (使用 GitHub CLI)
-              echo "📦 创建 PR: $BRANCH_NAME"
-              gh pr create \
-                --title "chore: auto-update packages via nvfetcher" \
-                --body "⚡ 由 nvfetcher 自动生成的包更新" \
-                --base main \
-                --head "$BRANCH_NAME" \
-                --label "automated,dependencies"
-
               echo "::set-output name=has_updates::true" # 设置输出变量
-              exit 0
           else
               echo "ℹ️ 无可用更新"
               echo "::set-output name=has_updates::false" # 设置输出变量
-              exit 0                                      # 正常退出避免工作流失败
           fi
         env:
-          AUTOMERGE_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+
+      - name: 📦 创建 PR
+        if: steps.update.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "chore: auto-update packages via nvfetcher"
+          branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}" # 使用生成的时间戳
+          commit-message: "chore: auto-update packages"
+          body: |
+            ⚡ 由 nvfetcher 自动生成的包更新
+            **包含以下更新:**
+            $(git log -1 --pretty=%B)
+          labels: "automated, dependencies"
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
