@@ -25,21 +25,21 @@
   };
   lampghost = {
     pname = "lampghost";
-    version = "v0.2.3";
+    version = "v0.2.4";
     src = fetchFromGitHub {
       owner = "Catizard";
       repo = "lampghost";
-      rev = "v0.2.3";
+      rev = "v0.2.4";
       fetchSubmodules = false;
-      sha256 = "sha256-BgqFe4nc5YgRMwJh2unEgePmXFAmUd7yKXFlWhrRklc=";
+      sha256 = "sha256-n9pE3yBzM9lzD3LYZyWzoBTkfyHuXFMmn9tKipoD9yo=";
     };
   };
   lampghost-bin = {
     pname = "lampghost-bin";
-    version = "v0.2.3";
+    version = "v0.2.4";
     src = fetchurl {
-      url = "https://github.com/Catizard/lampghost/releases/download/v0.2.3/lampghost_linux";
-      sha256 = "sha256-Bx3BvFphbFVjXkZCCkQjtw5mUkW5XaoePzvrJ8CO2U8=";
+      url = "https://github.com/Catizard/lampghost/releases/download/v0.2.4/lampghost_linux";
+      sha256 = "sha256-HwFt7l+EXgDNPDr+ilwenzPVox0BM9Rt9/I1uurQx4A=";
     };
   };
   portaudio-java = {
