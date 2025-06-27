@@ -48,12 +48,12 @@
             "name": null,
             "owner": "Catizard",
             "repo": "lampghost",
-            "rev": "v0.2.4",
-            "sha256": "sha256-n9pE3yBzM9lzD3LYZyWzoBTkfyHuXFMmn9tKipoD9yo=",
+            "rev": "v0.2.4.1",
+            "sha256": "sha256-+DTXnojIWBYXkIMfLVrguhl/JH9Pg5d5uGGeXTYhs3E=",
             "sparseCheckout": [],
             "type": "github"
         },
-        "version": "v0.2.4"
+        "version": "v0.2.4.1"
     },
     "lampghost-bin": {
         "cargoLocks": null,
@@ -64,11 +64,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-HwFt7l+EXgDNPDr+ilwenzPVox0BM9Rt9/I1uurQx4A=",
+            "sha256": "sha256-7R7XS3I8hp/4U8MlmERUbL8Ld4lKx7XBMNK/N5P5PrY=",
             "type": "url",
-            "url": "https://github.com/Catizard/lampghost/releases/download/v0.2.4/lampghost_linux"
+            "url": "https://github.com/Catizard/lampghost/releases/download/v0.2.4.1/lampghost_linux"
         },
-        "version": "v0.2.4"
+        "version": "v0.2.4.1"
     },
     "portaudio-java": {
         "cargoLocks": null,
