@@ -1,7 +1,7 @@
 name: Auto Update Packages via nixpkgs-update
 on:
   schedule:
-    - cron: "0 12 * * 0" # 每周日 UTC 12:00 运行
+    - cron: "0 12 * * *" # 每天 UTC 中午12点运行
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
           nix profile install nixpkgs#parallel nixpkgs#curl nixpkgs#jq
 
           # 安装 nixpkgs-update
-          nix run github:ryantm/nixpkgs-update -- --help >/dev/null
+          nix run nixpkgs#nix-update -- --help >/dev/null
 
       - name: Find packages with updateScript
         run: |
@@ -64,7 +64,7 @@ jobs:
           export HOME=$(mktemp -d)
 
           # 运行更新
-          nix run github:ryantm/nixpkgs-update -- update --package "$pkg" --commit || {
+          nix run nixpkgs#nix-update -- "$pkg" --flake --commit || {
             echo "更新 $pkg 失败"
             # 记录失败的包
             echo "$pkg" >> failed-packages.txt
