@@ -34,62 +34,6 @@
         },
         "version": "0.8.8"
     },
-    "lampghost": {
-        "cargoLocks": null,
-        "date": null,
-        "extract": null,
-        "name": "lampghost",
-        "passthru": null,
-        "pinned": false,
-        "src": {
-            "deepClone": false,
-            "fetchSubmodules": false,
-            "leaveDotGit": false,
-            "name": null,
-            "owner": "Catizard",
-            "repo": "lampghost",
-            "rev": "v0.2.4.1",
-            "sha256": "sha256-+DTXnojIWBYXkIMfLVrguhl/JH9Pg5d5uGGeXTYhs3E=",
-            "sparseCheckout": [],
-            "type": "github"
-        },
-        "version": "v0.2.4.1"
-    },
-    "lampghost-bin": {
-        "cargoLocks": null,
-        "date": null,
-        "extract": null,
-        "name": "lampghost-bin",
-        "passthru": null,
-        "pinned": false,
-        "src": {
-            "name": null,
-            "sha256": "sha256-7R7XS3I8hp/4U8MlmERUbL8Ld4lKx7XBMNK/N5P5PrY=",
-            "type": "url",
-            "url": "https://github.com/Catizard/lampghost/releases/download/v0.2.4.1/lampghost_linux"
-        },
-        "version": "v0.2.4.1"
-    },
-    "portaudio-java": {
-        "cargoLocks": null,
-        "date": "2023-07-04",
-        "extract": null,
-        "name": "portaudio-java",
-        "passthru": null,
-        "pinned": false,
-        "src": {
-            "deepClone": false,
-            "fetchSubmodules": false,
-            "leaveDotGit": false,
-            "name": null,
-            "rev": "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b",
-            "sha256": "sha256-t+Pqtgstd1uJjvD4GKomZHMeSECNLeQJOrz97o+lV2Q=",
-            "sparseCheckout": [],
-            "type": "git",
-            "url": "https://github.com/philburk/portaudio-java.git"
-        },
-        "version": "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b"
-    },
     "suisei-grub-theme": {
         "cargoLocks": null,
         "date": "2024-11-01",

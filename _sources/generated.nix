@@ -23,39 +23,6 @@
       sha256 = "sha256-CSaxWz4sRyMqdJlNmN3ae1N8OkzJk7VJqLvgrXIJ9+c=";
     };
   };
-  lampghost = {
-    pname = "lampghost";
-    version = "v0.2.4.1";
-    src = fetchFromGitHub {
-      owner = "Catizard";
-      repo = "lampghost";
-      rev = "v0.2.4.1";
-      fetchSubmodules = false;
-      sha256 = "sha256-+DTXnojIWBYXkIMfLVrguhl/JH9Pg5d5uGGeXTYhs3E=";
-    };
-  };
-  lampghost-bin = {
-    pname = "lampghost-bin";
-    version = "v0.2.4.1";
-    src = fetchurl {
-      url = "https://github.com/Catizard/lampghost/releases/download/v0.2.4.1/lampghost_linux";
-      sha256 = "sha256-7R7XS3I8hp/4U8MlmERUbL8Ld4lKx7XBMNK/N5P5PrY=";
-    };
-  };
-  portaudio-java = {
-    pname = "portaudio-java";
-    version = "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b";
-    src = fetchgit {
-      url = "https://github.com/philburk/portaudio-java.git";
-      rev = "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b";
-      fetchSubmodules = false;
-      deepClone = false;
-      leaveDotGit = false;
-      sparseCheckout = [ ];
-      sha256 = "sha256-t+Pqtgstd1uJjvD4GKomZHMeSECNLeQJOrz97o+lV2Q=";
-    };
-    date = "2023-07-04";
-  };
   suisei-grub-theme = {
     pname = "suisei-grub-theme";
     version = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
