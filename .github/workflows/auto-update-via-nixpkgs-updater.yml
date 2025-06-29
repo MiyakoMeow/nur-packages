@@ -117,11 +117,15 @@ jobs:
 
           # 运行更新
           echo "开始更新包: ${{ matrix.package }}"
-          nix-update "${{ matrix.package }}" --flake --commit
+          nix-update "${{ matrix.package }}" --flake
 
           # 恢复原始HOME并清理临时目录
           export HOME="$OLD_HOME"
           rm -rf "$HOME"
+
+          # 进行提交
+          git add *
+          git commit --message="nix-update: ${{ matrix.package }}"
 
           # 设置输出变量
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
