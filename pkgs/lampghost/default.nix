@@ -26,8 +26,7 @@
   src = fetchFromGitHub {
     owner = "Catizard";
     repo = "lampghost";
-    rev = "v0.2.3";
-    fetchSubmodules = false;
+    rev = version;
     sha256 = "sha256-BgqFe4nc5YgRMwJh2unEgePmXFAmUd7yKXFlWhrRklc=";
   };
 
@@ -35,7 +34,7 @@
   metaCommon = with lib; {
     description = "Offline & Cross-platform beatoraja lamp viewer and more";
     homepage = "https://github.com/Catizard/lampghost";
-    changelog = "https://github.com/Catizard/lampghost/releases/tag/v${version}";
+    changelog = "https://github.com/Catizard/lampghost/releases/tag/${version}";
     license = licenses.asl20;
     maintainers = [];
     platforms = platforms.linux;
