@@ -117,7 +117,7 @@ jobs:
 
           # 运行更新
           echo "开始更新包: ${{ matrix.package }}"
-          nix-update -- "${{ matrix.package }}" --flake --commit
+          nix-update "${{ matrix.package }}" --flake --commit
 
           # 恢复原始HOME并清理临时目录
           export HOME="$OLD_HOME"
