@@ -2,7 +2,6 @@
   lib,
   stdenvNoCC,
   sources,
-  nix-update-script,
 }: let
   version = "dev";
 in
@@ -24,12 +23,6 @@ in
     # 禁用自动解压步骤
     dontUnpack = true;
     dontBuild = true;
-
-    passthru = {
-      updateScript =
-        nix-update-script {
-        };
-    };
 
     meta = with lib; {
       description = "suiGRUB";
