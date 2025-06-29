@@ -72,12 +72,6 @@ stdenv.mkDerivation {
     fi
   '';
 
-  passthru = {
-    updateScript =
-      nix-update-script {
-      };
-  };
-
   meta = with lib; {
     description = "Java wrapper for PortAudio audio library";
     homepage = "https://github.com/philburk/portaudio-java";
