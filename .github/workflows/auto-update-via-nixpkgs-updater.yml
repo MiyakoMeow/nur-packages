@@ -128,7 +128,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
               # 检测到更新，进行提交
               git add *
-              git commit --message="nix-update: ${{ matrix.package }}"
+              git commit -m "nix-update: ${{ matrix.package }}"
               
               # 设置输出变量
               echo "has_update=true" >> $GITHUB_OUTPUT
@@ -141,7 +141,7 @@ jobs:
           fi
 
       - name: Create Pull Request
-        if: steps.update.outputs.has_updates == 'true'
+        if: steps.update.outputs.has_update == 'true'
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
