@@ -32,7 +32,7 @@ jobs:
       - name: Find packages with updateScript
         run: |
           # 使用Nix内置方法检测updateScript
-          nix eval --json .# --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
+          nix eval --json nix# --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
 
           # 过滤出有updateScript的包
           while IFS= read -r pkg; do
