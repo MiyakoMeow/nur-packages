@@ -22,6 +22,7 @@
   mkThemePackage = packageName: themePath:
     stdenvNoCC.mkDerivation {
       name = packageName;
+      pname = packageName;
       inherit src;
 
       dontUnpack = true;
