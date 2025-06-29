@@ -99,6 +99,18 @@ jobs:
       - name: Update package
         id: update
         run: |
+          # 设置 Git 用户信息
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+          # 创建唯一分支名
+          timestamp=$(date +%s)
+          branch_name="update/${{ matrix.package }}-$timestamp"
+          echo "分支名称: $branch_name"
+
+          # 创建新分支
+          git checkout -b "$branch_name"
+
           # 使用临时HOME目录解决权限问题
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
@@ -114,16 +126,13 @@ jobs:
 
           # 检查是否有需要提交的更改
           if [ -n "$(git status --porcelain)" ]; then
-              # 设置 Git 用户信息
-              git config user.name "MiyakoMeow Bot"
-              git config user.email "github-actions[bot]@users.noreply.github.com"
-
               # 检测到更新，进行提交
               git add *
               git commit -m "nix-update: ${{ matrix.package }}"
               
               # 设置输出变量
               echo "has_update=true" >> $GITHUB_OUTPUT
+              echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
               echo "更新完成: ${{ matrix.package }}"
           else
               # 没有检测到更新
@@ -136,7 +145,7 @@ jobs:
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: "nix-update/${{ matrix.package }}-$(date +%s)"
+          branch: ${{ steps.update-step.outputs.branch_name }}
           base: main
           commit-message: "nix-update: 自动更新包 ${{ matrix.package }}"
           title: "自动更新包: ${{ matrix.package }}"
