@@ -94,7 +94,7 @@ jobs:
             trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Install nix-update
-        run: nix profile install nixpkgs#nix-update
+        run: nix profile install nixpkgs#nix-update nixpkgs#git
 
       - name: Update package
         id: update-step
@@ -117,7 +117,7 @@ jobs:
 
           # 运行更新
           echo "开始更新包: ${{ matrix.package }}"
-          nix run nixpkgs#nix-update -- "${{ matrix.package }}" --flake --commit
+          nix-update -- "${{ matrix.package }}" --flake --commit
 
           # 恢复原始HOME并清理临时目录
           export HOME="$OLD_HOME"
