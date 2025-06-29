@@ -142,7 +142,7 @@ jobs:
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: ${{ steps.update-step.outputs.branch_name }}
+          branch: ${{ steps.update.outputs.branch_name }}
           base: main
           commit-message: "nix-update: 自动更新包 ${{ matrix.package }}"
           title: "自动更新包: ${{ matrix.package }}"
