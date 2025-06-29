@@ -23,12 +23,6 @@ in
       install -Dm644 $src $out/share/fcitx5/pinyin/dictionaries/fcitx5-pinyin-zhwiki.dict
     '';
 
-    passthru = {
-      updateScript =
-        nix-update-script {
-        };
-    };
-
     meta = with lib; {
       description = "Fcitx 5 Pinyin Dictionary from zh.wikipedia.org (auto update)";
       homepage = "https://github.com/felixonmars/fcitx5-pinyin-zhwiki";

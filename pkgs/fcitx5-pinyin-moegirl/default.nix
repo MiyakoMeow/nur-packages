@@ -2,7 +2,6 @@
   lib,
   stdenvNoCC,
   fetchurl,
-  nix-update-script,
   ...
 }: let
   pname = "fcitx5-pinyin-moegirl";
@@ -22,12 +21,6 @@ in
     installPhase = ''
       install -Dm644 $src $out/share/fcitx5/pinyin/dictionaries/fcitx5-pinyin-moegirl.dict
     '';
-
-    passthru = {
-      updateScript =
-        nix-update-script {
-        };
-    };
 
     meta = with lib; {
       description = "Fcitx 5 pinyin dictionary generator for MediaWiki instances. Releases for dict of zh.moegirl.org.cn. (auto update)";
