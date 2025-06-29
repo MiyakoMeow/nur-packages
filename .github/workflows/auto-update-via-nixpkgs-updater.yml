@@ -37,7 +37,7 @@ jobs:
 
           # 过滤出有updateScript的包
           while IFS= read -r pkg; do
-            if nix eval --json ".#$pkg.passthru.updateScript or null" | jq -e '. != null' >/dev/null; then
+            if nix eval --json ".#$pkg.updateScript or null" | jq -e '. != null' >/dev/null; then
               echo "$pkg"
             fi
           done < all-packages.txt > package-list.txt
