@@ -114,7 +114,7 @@ jobs:
 
           # 运行更新
           echo "开始更新包: ${{ matrix.package }}"
-          nix-update "${{ matrix.package }}" --flake
+          nix-update "${{ matrix.package }}" --flake --use-update-script
 
           # 恢复原始HOME并清理临时目录
           export TEMP_HOME="$HOME"
