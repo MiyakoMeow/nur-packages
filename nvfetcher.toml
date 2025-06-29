@@ -9,22 +9,9 @@ src.regex = "beatoraja(.*)-modernchic.zip"
 fetch.url = "https://www.mocha-repository.info/download/beatoraja$ver-modernchic.zip"
 
 [free-download-manager]
-src.webpage = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager"
+src.webpage = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/"
 src.regex = "freedownloadmanager_(.*)_amd64.deb"
 fetch.url = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/freedownloadmanager_$ver_amd64.deb"
-
-[lampghost]
-src.github = "Catizard/lampghost"
-fetch.github = "Catizard/lampghost"
-
-[lampghost-bin]
-src.github = "Catizard/lampghost"
-fetch.url = "https://github.com/Catizard/lampghost/releases/download/$ver/lampghost_linux"
-
-[portaudio-java]
-src.git = "https://github.com/philburk/portaudio-java.git"
-src.branch = "main"
-fetch.git = "https://github.com/philburk/portaudio-java.git"
 
 [suisei-grub-theme]
 src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
