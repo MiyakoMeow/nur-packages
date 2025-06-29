@@ -108,9 +108,6 @@ jobs:
           branch_name="update/${{ matrix.package }}-$timestamp"
           echo "分支名称: $branch_name"
 
-          # 创建新分支
-          git checkout -b "$branch_name"
-
           # 使用临时HOME目录解决权限问题
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
