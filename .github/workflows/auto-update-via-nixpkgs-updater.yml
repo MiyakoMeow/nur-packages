@@ -112,7 +112,7 @@ jobs:
           git checkout -b "$branch_name"
 
           # 使用临时HOME目录解决权限问题
-          export OLD_HOME="$HOME"
+          export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
 
           # 运行更新
@@ -120,8 +120,9 @@ jobs:
           nix-update "${{ matrix.package }}" --flake
 
           # 恢复原始HOME并清理临时目录
-          export HOME="$OLD_HOME"
-          rm -rf "$HOME"
+          export TEMP_HOME="$HOME"
+          export HOME="$ORI_HOME"
+          rm -rf "$TEMP_HOME"
 
           # 进行提交
           git add *
