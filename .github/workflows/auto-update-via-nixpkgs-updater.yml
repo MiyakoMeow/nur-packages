@@ -37,7 +37,26 @@ jobs:
 
           # 过滤出有updateScript的包
           while IFS= read -r pkg; do
-            if nix eval --json ".#$pkg.updateScript or null" | jq -e '. != null' >/dev/null; then
+            # 尝试获取updateScript
+            set +e
+            script_output=$(nix eval --impure --json ".#${pkg}.updateScript" 2>/tmp/error.log)
+            ret=$?
+            set -e
+            
+            if [ $ret -ne 0 ]; then
+              continue
+            fi
+            
+            # 检查输出是否为有效的updateScript
+            if ! echo "$script_output" | jq -e 'type == "array" and length > 0' >/dev/null; then
+              continue
+            fi
+            
+            # 提取第一个元素并检查是否包含nix-update
+            first_element=$(echo "$script_output" | jq -r '.[0]')
+            
+            # 检查是否以/nix-update结尾（考虑路径变化）
+            if [[ "$first_element" == */nix-update || "$first_element" == */nix-update-* ]]; then
               echo "$pkg"
             fi
           done < all-packages.txt > package-list.txt
