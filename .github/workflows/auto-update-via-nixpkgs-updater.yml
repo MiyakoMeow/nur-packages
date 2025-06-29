@@ -97,7 +97,7 @@ jobs:
         run: nix profile install nixpkgs#nix-update nixpkgs#git
 
       - name: Update package
-        id: update-step
+        id: update
         run: |
           # 设置 Git 用户信息
           git config --global user.email "actions@github.com"
@@ -124,15 +124,25 @@ jobs:
           export HOME="$ORI_HOME"
           rm -rf "$TEMP_HOME"
 
-          # 进行提交
-          git add *
-          git commit --message="nix-update: ${{ matrix.package }}"
-
-          # 设置输出变量
-          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
-          echo "更新完成: ${{ matrix.package }}"
+          # 检查是否有需要提交的更改
+          if [ -n "$(git status --porcelain)" ]; then
+              # 检测到更新，进行提交
+              git add *
+              git commit --message="nix-update: ${{ matrix.package }}"
+              
+              # 设置输出变量
+              echo "has_update=true" >> $GITHUB_OUTPUT
+              echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
+              echo "更新完成: ${{ matrix.package }}"
+          else
+              # 没有检测到更新
+              echo "has_update=false" >> $GITHUB_OUTPUT
+              echo "没有更新: ${{ matrix.package }}"
+          fi
 
       - name: Create Pull Request
+        if: steps.update.outputs.has_updates == 'true'
+        id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
           branch: ${{ steps.update-step.outputs.branch_name }}
@@ -151,7 +161,7 @@ jobs:
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
 
       - name: Enable Pull Request Automerge
-        if: ${{ always() }}
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.AUTOMERGE_TOKEN }}
