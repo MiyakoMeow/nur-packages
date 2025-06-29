@@ -1,12 +1,15 @@
-name: Auto Update Packages via nixpkgs-update
+name: Auto Update Packages via nix-update
 on:
   schedule:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
   workflow_dispatch: # 允许手动触发
 
 jobs:
-  update:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      package_list: ${{ steps.package-list.outputs.package_list }}
+      package_count: ${{ steps.package-list.outputs.package_count }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,16 +27,17 @@ jobs:
       - name: Install dependencies
         run: |
           # 安装必要工具
-          nix profile install nixpkgs#parallel nixpkgs#curl nixpkgs#jq
-
-          # 安装 nixpkgs-update
-          nix run nixpkgs#nix-update -- --help >/dev/null
+          nix profile install nixpkgs#curl nixpkgs#jq
 
       - name: Find packages with updateScript
+        id: package-list
         run: |
           # 使用Nix内置方法检测updateScript
           export NIXPKGS_ALLOW_UNFREE=1
           nix eval --impure --json .#packages.x86_64-linux --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
+
+          # 创建空包列表文件
+          echo "" > package-list.txt
 
           # 过滤出有updateScript的包
           while IFS= read -r pkg; do
@@ -57,84 +61,76 @@ jobs:
             
             # 检查是否以/nix-update结尾（考虑路径变化）
             if [[ "$first_element" == */nix-update || "$first_element" == */nix-update-* ]]; then
-              echo "$pkg"
+              echo "$pkg" >> package-list.txt
             fi
-          done < all-packages.txt > package-list.txt
+          done < all-packages.txt
 
+          # 输出包列表和数量
           echo "找到 $(wc -l < package-list.txt) 个需要更新的包:"
           cat package-list.txt
-          echo "::set-output name=package_count::$(wc -l < package-list.txt)"
 
-      - name: Run updates in parallel
-        id: update-run
+          # 设置输出变量
+          echo "package_list=$(cat package-list.txt | jq -R -s -c 'split("\n") | map(select(. != ""))')" >> $GITHUB_OUTPUT
+          echo "package_count=$(wc -l < package-list.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+  update-package:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.prepare.outputs.package_list) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
+            trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+      - name: Install nix-update
+        run: nix profile install nixpkgs#nix-update
+
+      - name: Update package
         run: |
           # 设置 Git 用户信息
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-          # 创建并行任务脚本
-          cat > update-script.sh <<'EOF'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          pkg="$1"
-          echo "尝试更新: $pkg"
+          # 创建唯一分支名
+          branch_name="update/${{ matrix.package }}-$(date +%s)"
+          git checkout -b "$branch_name"
 
           # 使用临时HOME目录解决权限问题
           export OLD_HOME="$HOME"
           export HOME=$(mktemp -d)
 
           # 运行更新
-          nix run nixpkgs#nix-update -- "$pkg" --flake --commit || {
-            echo "更新 $pkg 失败"
-            # 记录失败的包
-            echo "$pkg" >> failed-packages.txt
-          }
+          echo "开始更新包: ${{ matrix.package }}"
+          nix run nixpkgs#nix-update -- "${{ matrix.package }}" --flake --commit
 
           # 恢复原始HOME并清理临时目录
           export HOME="$OLD_HOME"
           rm -rf "$HOME"
-          EOF
-          chmod +x update-script.sh
 
-          # 初始化失败包列表
-          touch failed-packages.txt
+          echo "更新完成: ${{ matrix.package }}"
 
-          # 使用 GNU Parallel 并行运行
-          parallel --joblog joblog.txt -j 4 ./update-script.sh :::: package-list.txt
-
-          # 统计成功数量
-          success_count=$(($(wc -l < package-list.txt) - $(wc -l < failed-packages.txt | awk '{print $1}')))
-          echo "::set-output name=success_count::$success_count"
-          echo "::set-output name=fail_count::$(wc -l < failed-packages.txt | awk '{print $1}')"
-          echo "::set-output name=failed_packages::$(cat failed-packages.txt | tr '\n' ' ')"
-
-      - name: Create PR if changes
-        if: steps.update-run.outputs.success_count != '0'
-        id: create-pull-request
+      - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: nix-updates-$(date +%s)
+          branch: ${{ branch_name }}
           base: main
-          commit-message: "nix-update: 自动包更新"
-          title: "自动包更新 (${{ steps.update-run.outputs.success_count }} 个包)"
+          commit-message: "nix-update: 自动更新包 ${{ matrix.package }}"
+          title: "自动更新包: ${{ matrix.package }}"
           body: |
-            ## 更新结果
-            ✅ 成功更新: ${{ steps.update-run.outputs.success_count }} 个包
-            ❌ 失败更新: ${{ steps.update-run.outputs.fail_count }} 个包
+            由GitHub Actions自动更新包 ${{ matrix.package }}
 
-            ### 失败包列表
-            ${{ steps.update-run.outputs.failed_packages }}
-
-            ### 更新日志
-            <details>
-            <summary>点击查看详情</summary>
-
-            ```log
-            $(cat joblog.txt || echo "无更新日志")
-            ```
-            </details>
-
-            由 GitHub Actions 自动生成
+            此更新由nix-update工具自动生成
           labels: automated, dependencies
           delete-branch: true
           token: ${{ secrets.AUTOMERGE_TOKEN }}
@@ -142,16 +138,22 @@ jobs:
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
 
-      - name: No updates notification
-        if: steps.update-run.outputs.success_count == '0'
-        run: |
-          echo "没有包需要更新"
-          # 可选: 添加通知逻辑
-
       - name: Enable Pull Request Automerge
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
           merge-method: squash
+
+  summary:
+    needs: [prepare, update-package]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Update Summary
+        run: |
+          echo "包更新总结:"
+          echo "总包数: ${{ needs.prepare.outputs.package_count }}"
+          echo "更新Job数: ${{ needs.update-package.result == 'success' || needs.update-package.result == 'failure' }}"
+          echo "成功数: ${{ success() }}"
+          echo "失败数: ${{ failure() }}"
