@@ -57,10 +57,10 @@ jobs:
               echo "✅ 检测到更新!"
               git add ./_sources
               git commit -m "chore: auto-update via nvfetcher"
-              echo "::set-output name=has_updates::true" # 设置输出变量
+              echo "has_updates=true" >> $GITHUB_OUTPUT
           else
               echo "ℹ️ 无可用更新"
-              echo "::set-output name=has_updates::false" # 设置输出变量
+              echo "has_updates=false" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
