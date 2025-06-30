@@ -76,6 +76,7 @@ jobs:
   update-package:
     needs: prepare
     runs-on: ubuntu-latest
+    fail-fast: false
     strategy:
       matrix:
         package: ${{ fromJson(needs.prepare.outputs.package_list) }}

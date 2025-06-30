@@ -49,6 +49,7 @@ jobs:
     name: Update - ${{ matrix.name }}
     needs: discover-update-scripts
     runs-on: ubuntu-latest
+    fail-fast: false
     strategy:
       matrix: ${{ fromJson(needs.discover-update-scripts.outputs.matrix) }}
     steps:
