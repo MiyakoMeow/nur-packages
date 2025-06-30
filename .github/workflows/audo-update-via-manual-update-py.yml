@@ -1,7 +1,7 @@
 name: Auto Update Packages via Manual "update.py"
 on:
   schedule:
-    - cron: "30 11 * * *" # 每天UTC时间11:30运行（注意时区转换）
+    - cron: "30 11 * * *" # 每天UTC时间11:30运行
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -16,15 +16,16 @@ jobs:
       - name: Find all update.py files
         id: find-scripts
         run: |
-          # 递归查找pkgs目录下的update.py文件
-          files=$(find pkgs -name update.py | jq -R -s -c 'split("\n")[:-1]')
-          echo "files=$files" >> $GITHUB_OUTPUT
+          # 递归查找pkgs目录下的update.py文件并生成JSON数组
+          files_array=$(find pkgs -name update.py -exec dirname {} \; | jq -R -n '[inputs]')
+          echo "files=$files_array" >> $GITHUB_OUTPUT
 
       - name: Set job matrix
         id: set-matrix
         run: |
-          # 生成作业矩阵（JSON格式）
-          echo "matrix={\"include\":${{ steps.find-scripts.outputs.files }}}" >> $GITHUB_OUTPUT
+          # 生成作业矩阵
+          matrix_data=$(jq -c '{include: map({dir: .})}' <<< '${{ steps.find-scripts.outputs.files }}')
+          echo "matrix=$matrix_data" >> $GITHUB_OUTPUT
 
   run-update:
     name: Update - ${{ matrix.dir }}
@@ -35,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 获取完整历史记录用于变更检测
+          fetch-depth: 0 # 获取完整历史记录
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,14 +45,14 @@ jobs:
 
       - name: Run update script
         run: |
-          cd "${{ matrix.item | dirname }}"  # 进入脚本所在目录
+          cd "${{ matrix.dir }}"
           python ./update.py
 
       - name: Detect changes
         id: check-changes
         run: |
-          cd "${{ matrix.item | dirname }}"
-          # 检查目录是否有变更（包括新增/修改/删除）
+          cd "${{ matrix.dir }}"
+          # 检查目录是否有变更
           if [ -n "$(git status --porcelain .)" ]; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
           else
