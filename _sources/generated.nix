@@ -23,6 +23,20 @@
       sha256 = "sha256-CSaxWz4sRyMqdJlNmN3ae1N8OkzJk7VJqLvgrXIJ9+c=";
     };
   };
+  ros-dev-tools = {
+    pname = "ros-dev-tools";
+    version = "2eedebbfe100e21121fefa816b6ea43707545b16";
+    src = fetchgit {
+      url = "https://github.com/DSPEngineer/ros-dev-tools.git";
+      rev = "2eedebbfe100e21121fefa816b6ea43707545b16";
+      fetchSubmodules = false;
+      deepClone = false;
+      leaveDotGit = false;
+      sparseCheckout = [ ];
+      sha256 = "sha256-/b2zFBJMTwD/VQDEk7UoiZqmsvl7iFzSTBPzT0hRc4I=";
+    };
+    date = "2025-03-13";
+  };
   suisei-grub-theme = {
     pname = "suisei-grub-theme";
     version = "2ea338454810e6fd3ad04166bc84c576e29a6bea";

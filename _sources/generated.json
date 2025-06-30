@@ -34,6 +34,26 @@
         },
         "version": "0.8.8"
     },
+    "ros-dev-tools": {
+        "cargoLocks": null,
+        "date": "2025-03-13",
+        "extract": null,
+        "name": "ros-dev-tools",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "rev": "2eedebbfe100e21121fefa816b6ea43707545b16",
+            "sha256": "sha256-/b2zFBJMTwD/VQDEk7UoiZqmsvl7iFzSTBPzT0hRc4I=",
+            "sparseCheckout": [],
+            "type": "git",
+            "url": "https://github.com/DSPEngineer/ros-dev-tools.git"
+        },
+        "version": "2eedebbfe100e21121fefa816b6ea43707545b16"
+    },
     "suisei-grub-theme": {
         "cargoLocks": null,
         "date": "2024-11-01",
