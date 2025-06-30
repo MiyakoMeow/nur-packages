@@ -36,7 +36,7 @@ jobs:
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
       - name: Install nvfetcher
-        run: nix profile install nixpkgs#nvfetcher nixpkgs#git
+        run: nix profile install nixpkgs#git github:berberman/nvfetcher
 
       # 生成唯一时间戳作为分支名后缀
       - name: ⏰ 生成时间戳
