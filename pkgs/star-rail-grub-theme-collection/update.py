@@ -171,7 +171,7 @@ def main():
 
     # 保存到文件
     with open(args.output, "w") as f:
-        json.dump(theme_info, f, indent=2)
+        json.dump(theme_info, f, indent=2, sort_keys=True)
 
     logger.info(f"Saved theme info to {args.output}")
 

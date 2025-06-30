@@ -55,7 +55,7 @@ def generate_theme_list(cache_path, output_file):
 
     # 写入JSON文件
     with open(output_file, "w") as f:
-        json.dump(theme_data, f, indent=2)
+        json.dump(theme_data, f, indent=2, sort_keys=True)
 
     print(f"生成主题列表: 共找到 {len(theme_data)} 个有效主题")
     return len(theme_data)
