@@ -35,6 +35,9 @@ jobs:
       - name: Show nixpkgs version
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
+      - name: Install nvfetcher
+        run: nix profile install nixpkgs#nvfetcher nixpkgs#git
+
       # 生成唯一时间戳作为分支名后缀
       - name: ⏰ 生成时间戳
         id: timestamp
@@ -47,7 +50,7 @@ jobs:
           set -euo pipefail
 
           # 运行nvfetcher
-          nix run nixpkgs#nvfetcher -- -c ./nvfetcher.toml --keep-going
+          nvfetcher -c ./nvfetcher.toml --keep-going
 
           git config user.name "MiyakoMeow Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
