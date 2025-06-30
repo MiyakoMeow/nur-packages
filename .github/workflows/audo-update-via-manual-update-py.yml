@@ -63,7 +63,7 @@ jobs:
 
       - name: Install Python Deps
         run: |
-          pip install request
+          pip install requests
 
       - name: Run update script
         run: |
