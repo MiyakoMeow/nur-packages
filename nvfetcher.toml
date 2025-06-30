@@ -13,6 +13,10 @@ src.webpage = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadm
 src.regex = "freedownloadmanager_(.*)_amd64.deb"
 fetch.url = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadmanager/freedownloadmanager_$ver_amd64.deb"
 
+[ros-dev-tools]
+src.git = "https://github.com/DSPEngineer/ros-dev-tools.git"
+fetch.git = "https://github.com/DSPEngineer/ros-dev-tools.git"
+
 [suisei-grub-theme]
 src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
 src.branch = "main"
