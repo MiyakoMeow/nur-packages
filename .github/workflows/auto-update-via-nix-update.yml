@@ -145,7 +145,7 @@ jobs:
           branch: ${{ steps.update.outputs.branch_name }}
           base: main
           commit-message: "nix-update: 自动更新包 ${{ matrix.package }}"
-          title: "自动更新包: ${{ matrix.package }}"
+          title: "Auto Update(nix-update): ${{ matrix.package }}"
           body: |
             由GitHub Actions自动更新包 ${{ matrix.package }}
 

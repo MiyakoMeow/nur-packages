@@ -20,6 +20,10 @@ jobs:
         id: create-pull-request
         uses: DeterminateSystems/update-flake-lock@main
         with:
+          pr-title: "Auto Update(flake.lock)" # Title of PR to be created
+          pr-labels: | # Labels to be set on the PR
+            dependencies
+            automated
           path-to-flake-dir: "."
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           git-author-name: MiyakoMeow Bot Author

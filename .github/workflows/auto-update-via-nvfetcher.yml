@@ -98,7 +98,7 @@ jobs:
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
-          title: "chore: auto-update packages via nvfetcher"
+          title: "Auto Update(nvfetcher)"
           branch: "auto-update-${{ steps.timestamp.outputs.timestamp }}"
           delete-branch: true
           body: ${{ steps.pr-body.outputs.body_content }}
