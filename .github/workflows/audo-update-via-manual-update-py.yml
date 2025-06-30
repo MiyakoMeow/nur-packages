@@ -21,7 +21,7 @@ jobs:
             # 确保目录路径有效
             if [ -n "$dir" ]; then
               # 生成安全名称（替换特殊字符）
-              name=$(echo "$dir" | sed 's/[^a-zA-Z0-9]/→/g')
+              name=$(echo "$dir" | sed 's/[^a-zA-Z0-9\\-]/→/g')
               # 创建JSON对象
               echo "{\"dir\":\"$dir\",\"name\":\"$name\"}"
             fi
