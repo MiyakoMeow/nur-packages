@@ -65,7 +65,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: ${{ matrix.item | dirname }} # 仅提交目标目录的变更
+          path: ${{ matrix.dir }} # 仅提交目标目录的变更
           commit-message: "chore(auto): update ${{ matrix.dir }}"
           title: "Auto-update: ${{ matrix.dir }}"
           body: "Automated update from update.py script"
