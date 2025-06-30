@@ -16,16 +16,19 @@ jobs:
       - name: Find all update.py files
         id: find-scripts
         run: |
-          # 递归查找pkgs目录下的update.py文件并生成JSON数组
-          files_array=$(find pkgs -name update.py -exec dirname {} \; | jq -R -n '[inputs]')
-          echo "files=$files_array" >> $GITHUB_OUTPUT
+          # 递归查找pkgs目录下的update.py文件并生成格式化的JSON数组
+          find pkgs -name update.py -exec dirname {} \; > dirs.txt
+          # 使用jq创建有效的JSON数组
+          jq -R -s 'split("\n") | map(select(. != "")) | map({dir: .})' dirs.txt > matrix.json
+          # 输出为单行JSON
+          matrix_data=$(jq -c . matrix.json)
+          echo "matrix=$matrix_data" >> $GITHUB_OUTPUT
 
       - name: Set job matrix
         id: set-matrix
         run: |
-          # 生成作业矩阵
-          matrix_data=$(jq -c '{include: map({dir: .})}' <<< '${{ steps.find-scripts.outputs.files }}')
-          echo "matrix=$matrix_data" >> $GITHUB_OUTPUT
+          # 直接输出矩阵结构
+          echo "matrix={\"include\": ${{ steps.find-scripts.outputs.matrix }}}" >> $GITHUB_OUTPUT
 
   run-update:
     name: Update - ${{ matrix.dir }}
