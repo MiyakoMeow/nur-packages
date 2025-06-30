@@ -9,35 +9,41 @@ jobs:
     name: Find update scripts
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.find-scripts.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Find all update.py files
         id: find-scripts
         run: |
-          # 递归查找pkgs目录下的update.py文件
-          find pkgs -name update.py -exec dirname {} \; > dirs.txt
-
-          # 处理路径：替换特殊字符，生成友好名称
-          while IFS= read -r dir; do
+          # 查找所有update.py文件并生成有效的JSON矩阵
+          find pkgs -name update.py -exec dirname {} \; | while read -r dir; do
+            # 确保目录路径有效
             if [ -n "$dir" ]; then
-              # 替换特殊字符为箭头符号
-              name=$(echo "$dir" | sed 's/[\/]/→/g')
-              # 输出为JSON格式
-              echo "{\"dir\":\"$dir\",\"name\":\"$name\"}" 
+              # 生成安全名称（替换特殊字符）
+              name=$(echo "$dir" | sed 's/[^a-zA-Z0-9]/→/g')
+              # 创建JSON对象
+              echo "{\"dir\":\"$dir\",\"name\":\"$name\"}"
             fi
-          done < dirs.txt | jq -s . > matrix.json
+          done | jq -s '{"include": .}' | tee matrix.json
 
           # 输出为单行JSON
           matrix_data=$(jq -c . matrix.json)
           echo "matrix=$matrix_data" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $matrix_data"
 
-      - name: Set job matrix
-        id: set-matrix
+  validate-matrix:
+    name: Validate Matrix
+    needs: discover-update-scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check matrix format
         run: |
-          # 直接输出矩阵结构
-          echo "matrix={\"include\": ${{ steps.find-scripts.outputs.matrix }}}" >> $GITHUB_OUTPUT
+          echo "Matrix content:"
+          echo '${{ needs.discover-update-scripts.outputs.matrix }}'
+
+          echo "Parsed JSON:"
+          echo '${{ fromJson(needs.discover-update-scripts.outputs.matrix) }}'
 
   run-update:
     name: Update - ${{ matrix.name }}
