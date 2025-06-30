@@ -86,15 +86,18 @@ jobs:
         if: steps.check-changes.outputs.changes_detected == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ matrix.dir }} # 仅提交目标目录的变更
-          commit-message: "chore(auto): update ${{ matrix.name }}"
-          title: "Auto-update: ${{ matrix.name }}"
-          body: "Automated update from update.py script"
           branch: "auto-update/${{ matrix.name }}"
           base: main # 修改为目标分支（如main/master）
+          commit-message: "chore(auto): update ${{ matrix.name }}"
+          title: "Auto Update: ${{ matrix.name }}"
+          body: "Automated update from update.py script"
+          labels: automated, dependencies
           delete-branch: true
-          merge-method: squash # 自动合并PR
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
+          # Act like github-actions
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
 
       - name: Enable Pull Request Automerge
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
