@@ -16,14 +16,19 @@ jobs:
       - name: Find all update.py files
         id: find-scripts
         run: |
-          # 递归查找pkgs目录下的update.py文件并生成格式化的JSON数组
+          # 递归查找pkgs目录下的update.py文件
           find pkgs -name update.py -exec dirname {} \; > dirs.txt
-          echo "目录如下："
-          cat dirs.txt
-          # 使用jq创建有效的JSON数组
-          jq -R -s 'split("\n") | map(select(. != "")) | map({dir: .})' dirs.txt > matrix.json
-          echo "JSON如下："
-          cat matrix.json
+
+          # 处理路径：替换特殊字符，生成友好名称
+          while IFS= read -r dir; do
+            if [ -n "$dir" ]; then
+              # 替换特殊字符为箭头符号
+              name=$(echo "$dir" | sed 's/[\/]/→/g')
+              # 输出为JSON格式
+              echo "{\"dir\":\"$dir\",\"name\":\"$name\"}" 
+            fi
+          done < dirs.txt | jq -s . > matrix.json
+
           # 输出为单行JSON
           matrix_data=$(jq -c . matrix.json)
           echo "matrix=$matrix_data" >> $GITHUB_OUTPUT
@@ -35,7 +40,7 @@ jobs:
           echo "matrix={\"include\": ${{ steps.find-scripts.outputs.matrix }}}" >> $GITHUB_OUTPUT
 
   run-update:
-    name: Update - ${{ matrix.dir }}
+    name: Update - ${{ matrix.name }}
     needs: discover-update-scripts
     runs-on: ubuntu-latest
     strategy:
@@ -73,10 +78,10 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ matrix.dir }} # 仅提交目标目录的变更
-          commit-message: "chore(auto): update ${{ matrix.dir }}"
-          title: "Auto-update: ${{ matrix.dir }}"
+          commit-message: "chore(auto): update ${{ matrix.name }}"
+          title: "Auto-update: ${{ matrix.name }}"
           body: "Automated update from update.py script"
-          branch: "auto-update/${{ matrix.dir }}"
+          branch: "auto-update/${{ matrix.name }}"
           base: main # 修改为目标分支（如main/master）
           delete-branch: true
           merge-method: squash # 自动合并PR
