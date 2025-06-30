@@ -1,0 +1,82 @@
+name: Auto Update Packages via Manual "update.py"
+on:
+  schedule:
+    - cron: "30 11 * * *" # 每天UTC时间11:30运行（注意时区转换）
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  discover-update-scripts:
+    name: Find update scripts
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find all update.py files
+        id: find-scripts
+        run: |
+          # 递归查找pkgs目录下的update.py文件
+          files=$(find pkgs -name update.py | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$files" >> $GITHUB_OUTPUT
+
+      - name: Set job matrix
+        id: set-matrix
+        run: |
+          # 生成作业矩阵（JSON格式）
+          echo "matrix={\"include\":${{ steps.find-scripts.outputs.files }}}" >> $GITHUB_OUTPUT
+
+  run-update:
+    name: Update - ${{ matrix.dir }}
+    needs: discover-update-scripts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.discover-update-scripts.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史记录用于变更检测
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Run update script
+        run: |
+          cd "${{ matrix.item | dirname }}"  # 进入脚本所在目录
+          python ./update.py
+
+      - name: Detect changes
+        id: check-changes
+        run: |
+          cd "${{ matrix.item | dirname }}"
+          # 检查目录是否有变更（包括新增/修改/删除）
+          if [ -n "$(git status --porcelain .)" ]; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and create PR
+        id: create-pull-request
+        if: steps.check-changes.outputs.changes_detected == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ matrix.item | dirname }} # 仅提交目标目录的变更
+          commit-message: "chore(auto): update ${{ matrix.dir }}"
+          title: "Auto-update: ${{ matrix.dir }}"
+          body: "Automated update from update.py script"
+          branch: "auto-update/${{ matrix.dir }}"
+          base: main # 修改为目标分支（如main/master）
+          delete-branch: true
+          merge-method: squash # 自动合并PR
+
+      - name: Enable Pull Request Automerge
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
+          pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
+          merge-method: squash
