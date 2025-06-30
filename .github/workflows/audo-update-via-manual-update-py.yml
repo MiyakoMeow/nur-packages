@@ -86,7 +86,6 @@ jobs:
         if: steps.check-changes.outputs.changes_detected == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          path: ${{ matrix.dir }} # 仅提交目标目录的变更
           branch: "auto-update/${{ matrix.name }}"
           base: main # 修改为目标分支（如main/master）
           commit-message: "chore(auto): update ${{ matrix.name }}"
