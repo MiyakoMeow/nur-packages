@@ -18,8 +18,12 @@ jobs:
         run: |
           # 递归查找pkgs目录下的update.py文件并生成格式化的JSON数组
           find pkgs -name update.py -exec dirname {} \; > dirs.txt
+          echo "目录如下："
+          echo dirs.txt
           # 使用jq创建有效的JSON数组
           jq -R -s 'split("\n") | map(select(. != "")) | map({dir: .})' dirs.txt > matrix.json
+          echo "JSON如下："
+          echo matrix.json
           # 输出为单行JSON
           matrix_data=$(jq -c . matrix.json)
           echo "matrix=$matrix_data" >> $GITHUB_OUTPUT
