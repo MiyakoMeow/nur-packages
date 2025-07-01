@@ -54,6 +54,46 @@
         },
         "version": "2eedebbfe100e21121fefa816b6ea43707545b16"
     },
+    "ros2-kilted": {
+        "cargoLocks": null,
+        "date": "2025-06-18",
+        "extract": null,
+        "name": "ros2-kilted",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "rev": "f01907f5f3244c07718177867812903f3d208c92",
+            "sha256": "sha256-dB2iim8qxqU7ZoGXKl3GRhyAbVCekmapZEBVIz/tbz4=",
+            "sparseCheckout": [],
+            "type": "git",
+            "url": "https://github.com/ros2/ros2.git"
+        },
+        "version": "f01907f5f3244c07718177867812903f3d208c92"
+    },
+    "ros2-rolling": {
+        "cargoLocks": null,
+        "date": "2025-06-20",
+        "extract": null,
+        "name": "ros2-rolling",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "rev": "58faf9a091f9cd0bf24e93bb559b09133a75fafd",
+            "sha256": "sha256-mFwLGWXnoXqcHOsYoEfzd63WEZ1fFMwtA0nhcs93j+Q=",
+            "sparseCheckout": [],
+            "type": "git",
+            "url": "https://github.com/ros2/ros2.git"
+        },
+        "version": "58faf9a091f9cd0bf24e93bb559b09133a75fafd"
+    },
     "suisei-grub-theme": {
         "cargoLocks": null,
         "date": "2024-11-01",

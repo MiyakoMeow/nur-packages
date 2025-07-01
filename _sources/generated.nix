@@ -37,6 +37,34 @@
     };
     date = "2025-03-13";
   };
+  ros2-kilted = {
+    pname = "ros2-kilted";
+    version = "f01907f5f3244c07718177867812903f3d208c92";
+    src = fetchgit {
+      url = "https://github.com/ros2/ros2.git";
+      rev = "f01907f5f3244c07718177867812903f3d208c92";
+      fetchSubmodules = false;
+      deepClone = false;
+      leaveDotGit = false;
+      sparseCheckout = [ ];
+      sha256 = "sha256-dB2iim8qxqU7ZoGXKl3GRhyAbVCekmapZEBVIz/tbz4=";
+    };
+    date = "2025-06-18";
+  };
+  ros2-rolling = {
+    pname = "ros2-rolling";
+    version = "58faf9a091f9cd0bf24e93bb559b09133a75fafd";
+    src = fetchgit {
+      url = "https://github.com/ros2/ros2.git";
+      rev = "58faf9a091f9cd0bf24e93bb559b09133a75fafd";
+      fetchSubmodules = false;
+      deepClone = false;
+      leaveDotGit = false;
+      sparseCheckout = [ ];
+      sha256 = "sha256-mFwLGWXnoXqcHOsYoEfzd63WEZ1fFMwtA0nhcs93j+Q=";
+    };
+    date = "2025-06-20";
+  };
   suisei-grub-theme = {
     pname = "suisei-grub-theme";
     version = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
