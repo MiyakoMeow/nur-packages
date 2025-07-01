@@ -17,6 +17,16 @@ fetch.url = "https://debrepo.freedownloadmanager.org/pool/main/f/freedownloadman
 src.git = "https://github.com/DSPEngineer/ros-dev-tools.git"
 fetch.git = "https://github.com/DSPEngineer/ros-dev-tools.git"
 
+[ros2-kilted]
+src.git = "https://github.com/ros2/ros2.git"
+src.branch = "kilted"
+fetch.git = "https://github.com/ros2/ros2.git"
+
+[ros2-rolling]
+src.git = "https://github.com/ros2/ros2.git"
+src.branch = "rolling"
+fetch.git = "https://github.com/ros2/ros2.git"
+
 [suisei-grub-theme]
 src.git = "https://github.com/kirakiraAZK/suiGRUB.git"
 src.branch = "main"
