@@ -14,10 +14,6 @@
     overlays = import ./overlays; # nixpkgs overlays
   };
 
-  # 自动发现所有包目录
-  packagesDir = ./pkgs;
-  packageNames = builtins.attrNames (builtins.readDir packagesDir);
-
   # 导入 nvfetcher 生成的源
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchurl fetchgit fetchFromGitHub dockerTools;
@@ -67,18 +63,49 @@
         collector {} [] attrs;
     };
 
-  # 为每个目录创建包或包集合
-  autoPackages = builtins.listToAttrs (map (name: {
+  # 自动发现所有包目录
+  packagesDir = ./pkgs;
+  packageNames = builtins.attrNames (builtins.readDir packagesDir);
+
+  # 为每个目录创建包或包集合，并展开所有的包
+  allOutsidePackages = lib.collectPackages (builtins.listToAttrs (map (name: {
       name = name;
       value = importPackage (packagesDir + "/${name}");
     })
-    packageNames);
+    packageNames));
 
-  # 收集所有展开的包（包括单个包和集合中的包）
-  allPackages = lib.collectPackages autoPackages;
+  # === 处理 pkg-groups 目录 ===
+  pkgGroupsDir = ./pkg-groups;
+  # 获取所有组名（目录需存在）
+  groupNames =
+    if builtins.pathExists pkgGroupsDir
+    then builtins.attrNames (builtins.readDir pkgGroupsDir)
+    else [];
+
+  # 导入组内所有包，并收集为平面属性集
+  importGroup = groupName: let
+    groupDir = pkgGroupsDir + "/${groupName}";
+    pkgNames = builtins.attrNames (builtins.readDir groupDir);
+
+    # 创建组内包的原始属性集
+    rawGroup = builtins.listToAttrs (map (pkgName: {
+        name = pkgName;
+        value = importPackage (groupDir + "/${pkgName}");
+      })
+      pkgNames);
+  in
+    # 关键修改：对每个组应用 collectPackages
+    lib.collectPackages rawGroup;
+
+  # 构建组属性集 { 组名 = 平面包集合; ... }
+  groupedPackages = builtins.listToAttrs (map (groupName: {
+      name = groupName;
+      value = importGroup groupName;
+    })
+    groupNames);
 in
   specialAttrs
-  // autoPackages # 保留按目录组织的包集合
-  // allPackages
-# 添加所有包到顶层
+  // allOutsidePackages
+  // groupedPackages
+# 按组名组织的包组（每个组是平面属性集）
 
