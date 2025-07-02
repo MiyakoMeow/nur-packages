@@ -4,6 +4,7 @@
   ...
 }:
 pkgs.llvmPackages.clang.overrideAttrs (old: {
+  pname = "clang-minimal";
   installPhase =
     old.installPhase
     + ''
