@@ -53,17 +53,17 @@
   };
   ros2-rolling = {
     pname = "ros2-rolling";
-    version = "58faf9a091f9cd0bf24e93bb559b09133a75fafd";
+    version = "6088e33f8d96eb697c3842807e77288a40a9f473";
     src = fetchgit {
       url = "https://github.com/ros2/ros2.git";
-      rev = "58faf9a091f9cd0bf24e93bb559b09133a75fafd";
+      rev = "6088e33f8d96eb697c3842807e77288a40a9f473";
       fetchSubmodules = false;
       deepClone = false;
       leaveDotGit = false;
       sparseCheckout = [ ];
-      sha256 = "sha256-mFwLGWXnoXqcHOsYoEfzd63WEZ1fFMwtA0nhcs93j+Q=";
+      sha256 = "sha256-8GZmDUFdMt7fFwNQJimwaSt3mhfuD4GbZfV2IoA+5X8=";
     };
-    date = "2025-06-20";
+    date = "2025-07-02";
   };
   suisei-grub-theme = {
     pname = "suisei-grub-theme";
