@@ -162,7 +162,7 @@ in
     desktopItems = [
       (makeDesktopItem {
         name = pname;
-        desktopName = "LampGhost";
+        desktopName = "LampGhost (Dev Version)";
         comment = "Offline & Cross-platform beatoraja lamp viewer and more";
         exec = pname;
         categories = ["Game"];
