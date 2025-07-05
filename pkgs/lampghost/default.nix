@@ -171,8 +171,9 @@ in
       })
     ];
 
+    # See https://github.com/Mic92/nix-update?tab=readme-ov-file#subpackages
+    inherit frontend;
     passthru = {
-      inherit frontend;
       updateScript = nix-update-script {
         extraArgs = [
           "--subpackage"
