@@ -37,11 +37,13 @@ stdenvNoCC.mkDerivation {
 
   passthru.updateScript = {
     command = [
-      "${python3.withPackages (ps:
+      (python3.withPackages (ps:
         with ps; [
           requests
-        ])}/bin/python3"
-      "./update.py"
+        ]))
+      ./update.py
+      "--output"
+      "$(realpath ./pkgs/star-rail-grub-theme-collection/themes.json)"
     ];
   };
 
