@@ -70,93 +70,78 @@
         fi
       '';
 
-      passthru.updateScript = let
-        pyScript = pkgs.writeText "update-grub-themes.py" ''
-          #!/usr/bin/env python3
+      passthru.updateScript = pkgs.writeShellApplication {
+        name = "update-13atm01-grub-themes";
+        runtimeInputs = [pkgs.git pkgs.python3];
+        text = ''
+          set -euo pipefail
+
+          # 获取包目录路径 (nix文件所在位置)
+          PKG_DIR="$(dirname "$0")"
+          OUTPUT_FILE="$PKG_DIR/themes.json"
+
+          echo "正在更新GRUB主题列表..."
+          echo "输出位置: $OUTPUT_FILE"
+
+          # 使用临时目录处理
+          TEMP_DIR=$(mktemp -d)
+          trap 'rm -rf "$TEMP_DIR"' EXIT
+
+          # 克隆仓库
+          git clone \
+            --branch master \
+            --depth 1 \
+            https://github.com/13atm01/GRUB-Theme.git \
+            "$TEMP_DIR/repo"
+
+          # 处理主题并生成JSON
+          python3 <<EOF
           import os
           import json
           import re
           import sys
-          import subprocess
-          import tempfile
-          from pathlib import Path
-
-          # 仓库配置信息
-          REPO_OWNER = "13atm01"
-          REPO_NAME = "GRUB-Theme"
-          REPO_REV = "f4d764cab6bed5ab29e31965cca59420cc84ee0a"
-          REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}.git"
 
           def sanitize_name(name):
-              """将主题名转换为包名格式"""
               name = name.lower()
               name = re.sub(r"[^a-z0-9]", " ", name)
               name = re.sub(r"\s+", "-", name).strip("-")
               return name.rstrip("-")
 
-          def generate_theme_list(cache_path, output_file):
-              """生成主题列表JSON文件"""
-              theme_data = {}
-              for theme_dir in os.listdir(cache_path):
-                  theme_path = os.path.join(cache_path, theme_dir)
-                  if not os.path.isdir(theme_path):
-                      continue
+          repo_path = "$TEMP_DIR/repo"
+          output_file = "$OUTPUT_FILE"
 
-                  inner_dirs = [d for d in os.listdir(theme_path)
-                               if os.path.isdir(os.path.join(theme_path, d))]
+          theme_data = {}
+          for theme_dir in os.listdir(repo_path):
+              theme_path = os.path.join(repo_path, theme_dir)
+              if not os.path.isdir(theme_path):
+                  continue
 
-                  if len(inner_dirs) != 1:
-                      print(f"警告: 主题 '{theme_dir}' 应包含且仅包含一个子目录 (找到 {len(inner_dirs)} 个)")
-                      continue
+              inner_dirs = [d for d in os.listdir(theme_path)
+                           if os.path.isdir(os.path.join(theme_path, d))]
 
-                  inner_dir = inner_dirs[0]
-                  package_name = sanitize_name(theme_dir) + "-grub-theme"
-                  theme_txt_path = os.path.join(theme_path, inner_dir, "theme.txt")
+              if len(inner_dirs) != 1:
+                  print(f"警告: 主题 '{theme_dir}' 应包含且仅包含一个子目录 (找到 {len(inner_dirs)} 个)")
+                  continue
 
-                  if not os.path.exists(theme_txt_path):
-                      print(f"警告: 主题 '{theme_dir}' 缺少 theme.txt 文件")
-                      continue
+              inner_dir = inner_dirs[0]
+              package_name = sanitize_name(theme_dir) + "-grub-theme"
+              theme_txt_path = os.path.join(theme_path, inner_dir, "theme.txt")
 
-                  theme_data[package_name] = os.path.join(theme_dir, inner_dir)
+              if not os.path.exists(theme_txt_path):
+                  print(f"警告: 主题 '{theme_dir}' 缺少 theme.txt 文件")
+                  continue
 
-              with open(output_file, "w") as f:
-                  json.dump(theme_data, f, indent=2, sort_keys=True)
-              return len(theme_data)
+              theme_data[package_name] = os.path.join(theme_dir, inner_dir)
 
-          def main(output_dir):
-              """主处理函数"""
-              with tempfile.TemporaryDirectory() as tmpdir:
-                  repo_path = os.path.join(tmpdir, REPO_NAME)
-                  # 克隆仓库
-                  subprocess.run([
-                      "git", "clone", "--rev", REPO_REV,
-                      "--depth", "1", REPO_URL, repo_path
-                  ], check=True)
+          with open(output_file, "w") as f:
+              json.dump(theme_data, f, indent=2, sort_keys=True)
 
-                  # 生成主题列表
-                  output_file = os.path.join(output_dir, "themes.json")
-                  count = generate_theme_list(repo_path, output_file)
-                  print(f"生成 {count} 个主题到 {output_file}")
-                  return 0 if count > 0 else 1
-
-          if __name__ == "__main__":
-              if len(sys.argv) != 2:
-                  print("用法: python update_script.py <output_directory>")
-                  sys.exit(1)
-              sys.exit(main(sys.argv[1]))
+          count = len(theme_data)
+          print(f"成功生成 {count} 个主题到 {output_file}")
+          sys.exit(0 if count > 0 else 1)
+          EOF
         '';
-      in
-        writeScript "update-13atm01-grub-themes" ''
-          set -euo pipefail
-          export PATH="${pkgs.git}/bin:${pkgs.python3}/bin:$PATH"
-
-          # 获取包目录路径
-          PKG_DIR="$(dirname "$0")"
-
-          # 执行Python脚本
-          exec python3 ${pyScript} "$PKG_DIR"
-        '';
-
+      };
       meta = with lib; {
         description = "GRUB2 theme '${packageName}' from ${owner}/${repo}";
         homepage = "https://github.com/${owner}/${repo}";
