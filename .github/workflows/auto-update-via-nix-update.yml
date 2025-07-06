@@ -117,7 +117,7 @@ jobs:
 
           # 获取updateScript命令数组
           echo "获取包 ${{ matrix.package }} 的updateScript"
-          script_array=($(nix eval --impure --json ".#${matrix.package}.updateScript" | jq -r '.[]'))
+          script_array=($(nix eval --impure --json ".#${{ matrix.package }}.updateScript" | jq -r '.[]'))
 
           # 执行updateScript命令
           echo "执行更新命令: ${script_array[@]}"
