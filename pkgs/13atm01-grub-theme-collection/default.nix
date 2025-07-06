@@ -4,17 +4,42 @@
   stdenvNoCC,
   fetchFromGitHub,
   writeScript,
+  nix-update-script,
   ...
 }: let
   # 仓库信息
   owner = "13atm01";
   repo = "GRUB-Theme";
-  rev = "master"; # 替换为实际commit
+  rev = "f4d764cab6bed5ab29e31965cca59420cc84ee0a"; # 替换为实际commit
   hash = "sha256-yceSIVxVpUNUDFjMXGYGkD4qyMRajU7TyDg/gl2NmAs="; # 替换为实际SHA256
-
+  version = "Lyco-v1.0-unstable-2025-06-15";
   # 获取仓库源码
   src = fetchFromGitHub {
     inherit owner repo rev hash;
+  };
+
+  metaPkg = stdenvNoCC.mkDerivation rec {
+    pname = "13atm01-grub-themes-meta";
+    inherit src version;
+
+    dontUnpack = true;
+    dontConfigure = true;
+    dontBuild = true;
+    dontInstall = true;
+
+    passthru.updateScript = nix-update-script {
+      attrPath = pname;
+      extraArgs = [
+        "--flake"
+        "--version=branch"
+      ];
+    };
+    meta = with lib; {
+      description = "GRUB2 theme metaPack from ${owner}/${repo}";
+      homepage = "https://github.com/${owner}/${repo}";
+      license = licenses.gpl3;
+      platforms = platforms.all;
+    };
   };
 
   # 读取主题列表
@@ -25,7 +50,7 @@
     stdenvNoCC.mkDerivation {
       name = packageName;
       pname = packageName;
-      inherit src;
+      inherit src version;
 
       dontUnpack = true;
       dontConfigure = true;
@@ -59,7 +84,7 @@
           # 仓库配置信息
           REPO_OWNER = "13atm01"
           REPO_NAME = "GRUB-Theme"
-          REPO_BRANCH = "master"
+          REPO_REV = "f4d764cab6bed5ab29e31965cca59420cc84ee0a"
           REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}.git"
 
           def sanitize_name(name):
@@ -104,7 +129,7 @@
                   repo_path = os.path.join(tmpdir, REPO_NAME)
                   # 克隆仓库
                   subprocess.run([
-                      "git", "clone", "--branch", REPO_BRANCH,
+                      "git", "clone", "--rev", REPO_REV,
                       "--depth", "1", REPO_URL, repo_path
                   ], check=True)
 
@@ -141,5 +166,5 @@
     };
 in {
   # 所有主题包的集合
-  packagesInSet = lib.mapAttrs mkThemePackage themeList;
+  packagesInSet = lib.mapAttrs mkThemePackage themeList // {meta = metaPkg;};
 }
