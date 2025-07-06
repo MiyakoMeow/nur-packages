@@ -92,7 +92,7 @@ jobs:
       - name: Install required tools
         run: |
           # 安装通用工具（包括git用于提交）
-          nix profile install nixpkgs#git nixpkgs#python nixpkgs#nix-update nixpkgs#bash
+          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash
 
       - name: Update package
         id: update
