@@ -31,6 +31,7 @@ jobs:
 
       - name: Find packages with updateScript
         id: package-list
+        shell: bash
         run: |
           # 使用Nix内置方法检测updateScript
           export NIXPKGS_ALLOW_UNFREE=1
@@ -39,25 +40,37 @@ jobs:
           # 创建空包列表文件
           echo "" > package-list.txt
 
-          # 过滤出有updateScript的包
+          # 声明关联数组用于命令去重
+          declare -A unique_commands
+
+          # 过滤出有updateScript的包，并进行命令去重
           while IFS= read -r pkg; do
             # 尝试获取updateScript
             set +e
             script_output=$(nix eval --impure --json ".#${pkg}.updateScript" 2>/tmp/error.log)
             ret=$?
             set -e
-            
+
             if [ $ret -ne 0 ]; then
               continue
             fi
-            
+
             # 检查输出是否为有效的updateScript
             if ! echo "$script_output" | jq -e 'type == "array" and length > 0' >/dev/null; then
               continue
             fi
-            
-            # 所有有效updateScript都加入列表（移除nix-update特定检查）
-            echo "$pkg" >> package-list.txt
+
+            # 获取命令的JSON字符串表示用于比较
+            command_fingerprint=$(echo "$script_output" | jq -c '. | sort')
+
+            # 检查命令是否已存在
+            if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
+              # 新命令，记录到列表
+              unique_commands["$command_fingerprint"]=1
+              echo "$pkg" >> package-list.txt
+            else
+              echo "跳过包 $pkg (重复命令: ${command_fingerprint})"
+            fi
           done < all-packages.txt
 
           # 输出包列表和数量
