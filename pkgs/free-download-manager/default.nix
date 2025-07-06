@@ -14,6 +14,12 @@
   unixODBC,
   postgresql,
   mysql80,
+  # 额外依赖
+  gtk3,
+  pango,
+  atk,
+  cairo,
+  gdk-pixbuf,
   ...
 }:
 stdenv.mkDerivation rec {
@@ -52,6 +58,13 @@ stdenv.mkDerivation rec {
     postgresql.lib
     mysql80.client
     libxcrypt
+
+    # 额外修复依赖
+    gtk3 # Provides libgtk-3, libgdk-3
+    pango # Provides libpangocairo-1.0, libpango-1.0
+    atk # Provides libatk-1.0
+    cairo # Provides libcairo-gobject, libcairo
+    gdk-pixbuf # Provides libgdk_pixbuf-2.0
   ];
 
   runtimeDependencies = [
