@@ -3,7 +3,6 @@
   lib,
   stdenvNoCC,
   fetchurl,
-  python3,
   # Manual Input
   pname,
   url,
@@ -34,17 +33,6 @@ stdenvNoCC.mkDerivation {
       exit 1
     fi
   '';
-
-  # TODO Not Available!
-  passthru.updateScript = {
-    command = [
-      (python3.withPackages (ps:
-        with ps; [
-          requests
-        ]))
-      ./update.py
-    ];
-  };
 
   meta = with lib; {
     description = "Honkai: Star Rail GRUB theme (${pname})";
