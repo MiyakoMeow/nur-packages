@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           # 安装必要工具
-          nix profile install nixpkgs#curl nixpkgs#jq
+          nix profile install nixpkgs#curl nixpkgs#jq nixpkgs#python3 nixpkgs#nix-update
 
       - name: Find packages with updateScript
         id: package-list
