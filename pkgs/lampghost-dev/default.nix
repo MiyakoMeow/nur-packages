@@ -26,8 +26,8 @@
   src = fetchFromGitHub {
     owner = "Catizard";
     repo = "lampghost";
-    rev = "e3ee26ecaa48fd111608a4c2e9bfa57cc6149b60";
-    sha256 = "sha256-vQG4zl8/Pb92+9U7yqHE4jZZWbWbGAWJpD0XJN0WrIY=";
+    rev = "e19cc42d8066ca9f7039527b9dca85f938bb9b27";
+    sha256 = "sha256-iOm9eOcWz3J/bC3b321esfTkSvMHIEQ4/upYbnGC9cQ=";
   };
 
   # 元信息
