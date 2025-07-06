@@ -175,7 +175,9 @@ in
     inherit frontend;
     passthru = {
       updateScript = nix-update-script {
+        attrPath = pname;
         extraArgs = [
+          "--flake"
           "--subpackage"
           "frontend"
         ];
