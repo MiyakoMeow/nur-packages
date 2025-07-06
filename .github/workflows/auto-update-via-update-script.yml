@@ -52,11 +52,13 @@ jobs:
             set -e
 
             if [ $ret -ne 0 ]; then
+              echo "$pkg: Ret len == 0"
               continue
             fi
 
             # 检查输出是否为有效的updateScript
             if ! echo "$script_output" | jq -e 'type == "array" and length > 0' >/dev/null; then
+              echo "$pkg: $script_output: not an array with length > 0"
               continue
             fi
 
