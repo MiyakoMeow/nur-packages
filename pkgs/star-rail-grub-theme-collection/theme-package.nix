@@ -42,8 +42,6 @@ stdenvNoCC.mkDerivation {
           requests
         ]))
       ./update.py
-      "--output"
-      "$(realpath ./pkgs/star-rail-grub-theme-collection/themes.json)"
     ];
   };
 
