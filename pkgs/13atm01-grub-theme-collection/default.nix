@@ -3,6 +3,7 @@
   pkgs,
   stdenvNoCC,
   fetchFromGitHub,
+  writeScript,
   ...
 }: let
   # 仓库信息
@@ -120,7 +121,7 @@
               sys.exit(main(sys.argv[1]))
         '';
       in
-        pkgs.writeShellScript "update-13atm01-grub-themes" ''
+        writeScript "update-13atm01-grub-themes" ''
           set -euo pipefail
           export PATH="${pkgs.git}/bin:${pkgs.python3}/bin:$PATH"
 
