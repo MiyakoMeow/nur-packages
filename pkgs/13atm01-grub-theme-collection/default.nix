@@ -2,6 +2,7 @@
   lib,
   stdenvNoCC,
   fetchFromGitHub,
+  python3,
   ...
 }: let
   # 仓库信息
@@ -42,6 +43,16 @@
           exit 1
         fi
       '';
+
+      passthru.updateScript = {
+        command = [
+          "${python3.withPackages (ps:
+            with ps; [
+              requests
+            ])}/bin/python3"
+          "./update.py"
+        ];
+      };
 
       meta = with lib; {
         description = "GRUB2 theme '${packageName}' from ${owner}/${repo}";
