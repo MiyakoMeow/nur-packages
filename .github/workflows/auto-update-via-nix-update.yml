@@ -1,4 +1,4 @@
-name: Auto Update Packages via nix-update
+name: Auto Update Packages via updateScript
 on:
   schedule:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
@@ -56,13 +56,8 @@ jobs:
               continue
             fi
             
-            # 提取第一个元素并检查是否包含nix-update
-            first_element=$(echo "$script_output" | jq -r '.[0]')
-            
-            # 检查是否以/nix-update结尾（考虑路径变化）
-            if [[ "$first_element" == */nix-update || "$first_element" == */nix-update-* ]]; then
-              echo "$pkg" >> package-list.txt
-            fi
+            # 所有有效updateScript都加入列表（移除nix-update特定检查）
+            echo "$pkg" >> package-list.txt
           done < all-packages.txt
 
           # 输出包列表和数量
@@ -94,8 +89,10 @@ jobs:
             substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
             trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-      - name: Install nix-update
-        run: nix profile install nixpkgs#nix-update nixpkgs#git
+      - name: Install required tools
+        run: |
+          # 安装通用工具（包括git用于提交）
+          nix profile install nixpkgs#git nixpkgs#python nixpkgs#nix-update nixpkgs#bash
 
       - name: Update package
         id: update
@@ -103,6 +100,11 @@ jobs:
           # 设置 Git 用户信息
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
+
+          # 准备执行环境变量（兼容不同脚本类型）
+          export NIXPKGS_ALLOW_UNFREE=1
+          export NIXPKGS_ALLOW_BROKEN=1
+          export NIXPKGS_ALLOW_INSECURE=1
 
           # 创建唯一分支名
           timestamp=$(date +%s)
@@ -113,9 +115,13 @@ jobs:
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
 
-          # 运行更新
-          echo "开始更新包: ${{ matrix.package }}"
-          nix-update "${{ matrix.package }}" --flake --use-update-script
+          # 获取updateScript命令数组
+          echo "获取包 ${{ matrix.package }} 的updateScript"
+          script_array=($(nix eval --impure --json ".#${matrix.package}.updateScript" | jq -r '.[]'))
+
+          # 执行updateScript命令
+          echo "执行更新命令: ${script_array[@]}"
+          "${script_array[@]}"
 
           # 恢复原始HOME并清理临时目录
           export TEMP_HOME="$HOME"
@@ -126,7 +132,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
               # 检测到更新，进行提交
               git add *
-              git commit -m "nix-update: ${{ matrix.package }}"
+              git commit -m "updateScript: ${{ matrix.package }}"
               
               # 设置输出变量
               echo "has_update=true" >> $GITHUB_OUTPUT
@@ -145,12 +151,12 @@ jobs:
         with:
           branch: ${{ steps.update.outputs.branch_name }}
           base: main
-          commit-message: "nix-update: 自动更新包 ${{ matrix.package }}"
-          title: "Auto Update(nix-update): ${{ matrix.package }}"
+          commit-message: "updateScript: 自动更新包 ${{ matrix.package }}"
+          title: "Auto Update(updateScript): ${{ matrix.package }}"
           body: |
             由GitHub Actions自动更新包 ${{ matrix.package }}
 
-            此更新由nix-update工具自动生成
+            此更新由包的updateScript自动生成
           labels: automated, dependencies
           delete-branch: true
           token: ${{ secrets.AUTOMERGE_TOKEN }}
