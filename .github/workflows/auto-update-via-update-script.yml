@@ -52,18 +52,42 @@ jobs:
             set -e
 
             if [ $ret -ne 0 ]; then
-              echo "$pkg: Ret len == 0"
               continue
             fi
 
-            # 检查输出是否为有效的updateScript
-            if ! echo "$script_output" | jq -e 'type == "array" and length > 0' >/dev/null; then
-              echo "$pkg: $script_output: not an array with length > 0"
+            # 检查输出类型并标准化为命令数组
+            script_type=$(echo "$script_output" | jq -r 'type')
+            command_fingerprint=""
+
+            case "$script_type" in
+              "array")
+                # 数组类型：直接排序
+                command_fingerprint=$(echo "$script_output" | jq -c 'sort')
+                ;;
+              "string")
+                # 字符串类型：转换为单元素数组
+                command_fingerprint=$(echo "$script_output" | jq -c '[.] | sort')
+                ;;
+              "object")
+                # 属性集类型：检查是否有command字段
+                if echo "$script_output" | jq -e 'has("command")' >/dev/null; then
+                  command_type=$(echo "$script_output" | jq -r '.command | type')
+                  if [ "$command_type" = "array" ]; then
+                    # 提取command数组并排序
+                    command_fingerprint=$(echo "$script_output" | jq -c '.command | sort')
+                  elif [ "$command_type" = "string" ]; then
+                    # 字符串command转换为单元素数组
+                    command_fingerprint=$(echo "$script_output" | jq -c '.command | [.] | sort')
+                  fi
+                fi
+                ;;
+            esac
+
+            # 跳过无法识别的格式
+            if [ -z "$command_fingerprint" ]; then
+              echo "跳过包 $pkg (不支持的updateScript格式: $script_type)"
               continue
             fi
-
-            # 获取命令的JSON字符串表示用于比较
-            command_fingerprint=$(echo "$script_output" | jq -c '. | sort')
 
             # 检查命令是否已存在
             if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
@@ -111,6 +135,7 @@ jobs:
 
       - name: Update package
         id: update
+        shell: bash
         run: |
           # 设置 Git 用户信息
           git config --global user.email "actions@github.com"
@@ -130,13 +155,53 @@ jobs:
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
 
-          # 获取updateScript命令数组
+          # 获取updateScript并处理不同类型
           echo "获取包 ${{ matrix.package }} 的updateScript"
-          script_array=($(nix eval --impure --json ".#${{ matrix.package }}.updateScript" | jq -r '.[]'))
+          script_json=$(nix eval --impure --json ".#${{ matrix.package }}.updateScript")
+          script_type=$(echo "$script_json" | jq -r 'type')
 
-          # 执行updateScript命令
-          echo "执行更新命令: ${script_array[@]}"
-          "${script_array[@]}"
+          # 根据不同类型执行命令
+          case "$script_type" in
+            "array")
+              # 数组类型：直接执行
+              script_array=($(echo "$script_json" | jq -r '.[]'))
+              echo "执行更新命令(数组): ${script_array[@]}"
+              "${script_array[@]}"
+              ;;
+            "string")
+              # 字符串类型：作为shell命令执行
+              command_str=$(echo "$script_json" | jq -r '.')
+              echo "执行更新命令(字符串): $command_str"
+              bash -c "$command_str"
+              ;;
+            "object")
+              # 属性集类型：提取command字段
+              if echo "$script_json" | jq -e 'has("command")' >/dev/null; then
+                command_type=$(echo "$script_json" | jq -r '.command | type')
+                if [ "$command_type" = "array" ]; then
+                  # 数组command：直接执行
+                  script_array=($(echo "$script_json" | jq -r '.command[]'))
+                  echo "执行更新命令(属性集-数组): ${script_array[@]}"
+                  "${script_array[@]}"
+                elif [ "$command_type" = "string" ]; then
+                  # 字符串command：作为shell命令执行
+                  command_str=$(echo "$script_json" | jq -r '.command')
+                  echo "执行更新命令(属性集-字符串): $command_str"
+                  bash -c "$command_str"
+                else
+                  echo "错误：不支持的command类型: $command_type"
+                  exit 1
+                fi
+              else
+                echo "错误：属性集缺少command字段"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "错误：未知的updateScript类型: $script_type"
+              exit 1
+              ;;
+          esac
 
           # 恢复原始HOME并清理临时目录
           export TEMP_HOME="$HOME"
