@@ -46,11 +46,11 @@
 
       passthru.updateScript = {
         command = [
-          "${python3.withPackages (ps:
+          (python3.withPackages (ps:
             with ps; [
               requests
-            ])}/bin/python3"
-          "./update.py"
+            ]))
+          ./update.py
         ];
       };
 
