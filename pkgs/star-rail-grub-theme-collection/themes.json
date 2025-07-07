@@ -1,4 +1,9 @@
 {
+  "star-rail-grub-theme-acheron": {
+    "sha256": "68f1d1def567db7b50a016224a3f2296b8ef5bd59ee14476550d8f1d364e97dc",
+    "tag": "20250704-103400",
+    "url": "https://github.com/voidlhf/StarRailGrubThemes/releases/download/20250704-103400/Acheron.tar.gz"
+  },
   "star-rail-grub-theme-acheron_cn": {
     "sha256": "8288edba8c91076455eb4fbfa4b26149f50e032c55aa57dfd6e984285ad2ecf9",
     "tag": "20250704-103400",
