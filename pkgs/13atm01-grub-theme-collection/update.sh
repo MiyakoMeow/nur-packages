@@ -5,8 +5,8 @@
 set -euo pipefail
 
 # 获取包目录路径 (nix文件所在位置)
-PKG_DIR="$(dirname "$0")"
-OUTPUT_FILE="$PKG_DIR/themes.json"
+PKG_DIR="$(dirname "${BASH_SOURCE[0]}")"
+OUTPUT_FILE="$PKG_DIR/theme-list.json"
 
 echo "正在更新GRUB主题列表..."
 echo "输出位置: $OUTPUT_FILE"
