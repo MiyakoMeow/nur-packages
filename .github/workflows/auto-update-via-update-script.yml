@@ -125,8 +125,8 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-            substituters = https://nix-community.cachix.org/ https://cache.nixos.org/
-            trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            substituters = https://miyakomeow.cachix.org https://nix-community.cachix.org/ https://cache.nixos.org/
+            trusted-public-keys = miyakomeow.cachix.org-1:85k7pjjK1Voo+kMHJx8w3nT1rlBow3+4/M+LsAuMCRY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Install required tools
         run: |
@@ -145,6 +145,8 @@ jobs:
           export NIXPKGS_ALLOW_UNFREE=1
           export NIXPKGS_ALLOW_BROKEN=1
           export NIXPKGS_ALLOW_INSECURE=1
+
+          echo "NIX_PATH=$NIX_PATH"
 
           # 创建唯一分支名
           timestamp=$(date +%s)
