@@ -3,7 +3,6 @@
   pkgs,
   stdenvNoCC,
   fetchFromGitHub,
-  writeScript,
   nix-update-script,
   ...
 }: let
@@ -70,7 +69,7 @@
         fi
       '';
 
-      passthru.updateScript = pkgs.writeShellApplication {
+      passthru.updateScriptOld = pkgs.writeShellApplication {
         name = "update-13atm01-grub-themes";
         runtimeInputs = [pkgs.git pkgs.python3];
         text = ''
