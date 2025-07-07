@@ -70,7 +70,7 @@
       '';
 
       # Self updateScript
-      passthru.updateScript = {command = [./update.sh src];};
+      passthru.updateScript = [./update.sh];
 
       meta = with lib; {
         description = "GRUB2 theme '${packageName}' from ${owner}/${repo}";
