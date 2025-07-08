@@ -22,12 +22,12 @@
   ...
 }: let
   pname = "lampghost-dev";
-  version = "0.2.4.1-unstable-2025-07-07";
+  version = "0.2.4.1-unstable-2025-07-08";
   src = fetchFromGitHub {
     owner = "Catizard";
     repo = "lampghost";
-    rev = "6562721d6d73930dcef0a3c9dd03fc24c2b0a029";
-    sha256 = "sha256-wFHhZ7nn/tO6E4DmUo1HB4TmlTcJzvNOy1NDb2DtOCg=";
+    rev = "a68e2b82c57d5d6d683b35c50549771d42a0a5e0";
+    sha256 = "sha256-10y1MgPmfbP4nEsRjoHEyI4B1gfFkAe2Q8tc/le/odI=";
   };
 
   # 元信息
