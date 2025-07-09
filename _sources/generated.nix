@@ -20,7 +20,7 @@
     version = "0.8.8";
     src = fetchurl {
       url = "https://www.mocha-repository.info/download/beatoraja0.8.8-modernchic.zip";
-      sha256 = "sha256-CSaxWz4sRyMqdJlNmN3ae1N8OkzJk7VJqLvgrXIJ9+c=";
+      sha256 = "sha256-yJwokOldNCUdvPtXqy1OL2ESGp446/aZBQevetGlp7Q=";
     };
   };
   ros-dev-tools = {
