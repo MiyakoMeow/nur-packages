@@ -22,12 +22,12 @@
   ...
 }: let
   pname = "lampghost-dev";
-  version = "0.2.6-unstable-2025-07-19";
+  version = "0.2.6-unstable-2025-07-24";
   src = fetchFromGitHub {
     owner = "Catizard";
     repo = "lampghost";
-    rev = "fe73355d2b301f6f9f4aa7408ed99f78893b8fe8";
-    sha256 = "sha256-hXyYhR5Sjx67+ZFSu9BX9Abj42TFRmAEDRacILrFIeY=";
+    rev = "252b0ed8f5be377b3593bfa91e5105f21dcf0926";
+    sha256 = "sha256-J8ox6Ts6b8TuhmR2ZUAoK9QLjeDNZaVnZcMQR6WgTaY=";
   };
 
   # 元信息
@@ -55,7 +55,7 @@
     # 关键配置：完全离线构建
     npmDeps = fetchNpmDeps {
       src = "${src.outPath}/frontend";
-      hash = "sha256-euYZfQ2MpiwACECzRdwx7RVp4cGdpa4wpcd/phkARIU="; # 首次构建后替换
+      hash = "sha256-YYF6RfA3uE65QdwuJMV+NSvGYtmZRxwrVbQtijNyHRE="; # 首次构建后替换
     };
 
     # 配置离线环境
@@ -98,7 +98,7 @@ in
   buildGoModule {
     inherit pname version src;
 
-    vendorHash = "sha256-EefHPirHEaKCTt+BPyr9Ac+bETI/omCuQNX5bP7y9Ec=";
+    vendorHash = "sha256-eICfNOMJ7I1wMZGyFCYWjQ3l7Vn/3Ll26eP95RM5GGY=";
 
     nativeBuildInputs = [
       wails
