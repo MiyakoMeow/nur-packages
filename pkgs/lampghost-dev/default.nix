@@ -22,12 +22,12 @@
   ...
 }: let
   pname = "lampghost-dev";
-  version = "0.2.6-unstable-2025-07-24";
+  version = "0.2.6-unstable-2025-07-27";
   src = fetchFromGitHub {
     owner = "Catizard";
     repo = "lampghost";
-    rev = "252b0ed8f5be377b3593bfa91e5105f21dcf0926";
-    sha256 = "sha256-J8ox6Ts6b8TuhmR2ZUAoK9QLjeDNZaVnZcMQR6WgTaY=";
+    rev = "f77ba1181672a7f4b7d43b3afe9841fb86cdff04";
+    sha256 = "sha256-nQD1q5M9F0lJaboXQaVFpl6DohiwToq3L+hRYK/C0v8=";
   };
 
   # 元信息
@@ -98,7 +98,7 @@ in
   buildGoModule {
     inherit pname version src;
 
-    vendorHash = "sha256-eICfNOMJ7I1wMZGyFCYWjQ3l7Vn/3Ll26eP95RM5GGY=";
+    vendorHash = "sha256-217fmsfXd9tXs2FIYr7ttWTihpAQJgilXIhLZIuknBI=";
 
     nativeBuildInputs = [
       wails
