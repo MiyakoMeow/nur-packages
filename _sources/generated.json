@@ -76,7 +76,7 @@
     },
     "ros2-rolling": {
         "cargoLocks": null,
-        "date": "2025-07-02",
+        "date": "2025-07-31",
         "extract": null,
         "name": "ros2-rolling",
         "passthru": null,
@@ -86,13 +86,13 @@
             "fetchSubmodules": false,
             "leaveDotGit": false,
             "name": null,
-            "rev": "6088e33f8d96eb697c3842807e77288a40a9f473",
-            "sha256": "sha256-8GZmDUFdMt7fFwNQJimwaSt3mhfuD4GbZfV2IoA+5X8=",
+            "rev": "9b348e945d4f69fefe879b820bec1acf20e3b70a",
+            "sha256": "sha256-QWM/zHArCN7kK4IeFy09QhabAoNDxYrOE66CgmRMIAU=",
             "sparseCheckout": [],
             "type": "git",
             "url": "https://github.com/ros2/ros2.git"
         },
-        "version": "6088e33f8d96eb697c3842807e77288a40a9f473"
+        "version": "9b348e945d4f69fefe879b820bec1acf20e3b70a"
     },
     "suisei-grub-theme": {
         "cargoLocks": null,
