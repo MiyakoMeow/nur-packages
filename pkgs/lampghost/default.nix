@@ -13,7 +13,7 @@
   wails,
   webkitgtk_4_0,
   pkg-config,
-  libsoup_2_4,
+  libsoup_3,
   tree,
   jq,
   glib, # 添加 glib 用于编译模式
@@ -113,7 +113,7 @@ in
 
     buildInputs = [
       webkitgtk_4_0
-      libsoup_2_4
+      libsoup_3
       gsettings-desktop-schemas # 添加 GSettings 模式
     ];
 
