@@ -11,7 +11,7 @@
   copyDesktopItems,
   nix-update-script,
   wails,
-  webkitgtk_4_0,
+  webkitgtk_6_0,
   pkg-config,
   libsoup_3,
   tree,
@@ -112,7 +112,7 @@ in
     ];
 
     buildInputs = [
-      webkitgtk_4_0
+      webkitgtk_6_0
       libsoup_3
       gsettings-desktop-schemas # 添加 GSettings 模式
     ];
