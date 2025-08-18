@@ -11,7 +11,7 @@ jobs:
     outputs:
       matrix: ${{ steps.find-scripts.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Find all update.py files
         id: find-scripts
@@ -53,7 +53,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-update-scripts.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # 获取完整历史记录
 

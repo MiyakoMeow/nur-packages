@@ -18,7 +18,7 @@ jobs:
       has_updates: ${{ steps.update.outputs.has_updates }}
     steps:
       - name: 🛎️ 检出仓库
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.AUTOMERGE_TOKEN }}
