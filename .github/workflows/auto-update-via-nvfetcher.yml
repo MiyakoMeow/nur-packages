@@ -191,3 +191,30 @@ jobs:
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           pull-request-number: ${{ needs.update.outputs.pr_number }}
           merge-method: merge
+
+      - name: Delete source branch after merge
+        if: success()
+        run: |
+          # 等待一段时间让PR合并完成
+          sleep 10
+
+          # 检查PR是否已合并
+          PR_STATUS=$(gh api "repos/${{ github.repository }}/pulls/${{ needs.update.outputs.pr_number }}" --jq '.merged')
+
+          if [ "$PR_STATUS" = "true" ]; then
+            echo "PR已合并，开始删除源分支"
+            BRANCH_NAME="auto-update-${{ needs.update.outputs.timestamp }}"
+
+            # 删除分支
+            gh api \
+              --method DELETE \
+              "repos/${{ github.repository }}/git/refs/heads/$BRANCH_NAME" \
+              -H "Accept: application/vnd.github.v3+json" \
+              || echo "分支 $BRANCH_NAME 删除失败或已不存在"
+
+            echo "✅ 分支 $BRANCH_NAME 删除完成"
+          else
+            echo "PR尚未合并，跳过分支删除"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
