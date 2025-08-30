@@ -118,4 +118,4 @@ jobs:
         with:
           token: ${{ secrets.AUTOMERGE_TOKEN }}
           pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
-          merge-method: squash
+          merge-method: merge
