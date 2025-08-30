@@ -99,6 +99,28 @@ jobs:
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
 
+      - name: Build and test updated package
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
+        run: |
+          # 切换到新创建的分支
+          git checkout "auto-update/${{ matrix.name }}"
+
+          # 设置Nix环境
+          export NIXPKGS_ALLOW_UNFREE=1
+          export NIXPKGS_ALLOW_BROKEN=1
+          export NIXPKGS_ALLOW_INSECURE=1
+
+          # 构建测试
+          echo "开始构建测试..."
+          nix-env -f . -qa \* --meta --xml \
+            --option allow-import-from-derivation true \
+            --drv-path --show-trace \
+            -I nixpkgs=$(nix-instantiate --find-file nixpkgs) \
+            -I $PWD
+
+          # 运行完整构建
+          nix shell -f '<nixpkgs>' nix-build-uncached -c nix-build-uncached ci.nix -A cacheOutputs
+
       - name: Enable Pull Request Automerge
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         uses: peter-evans/enable-pull-request-automerge@v3
