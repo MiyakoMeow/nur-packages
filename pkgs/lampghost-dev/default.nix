@@ -11,7 +11,7 @@
   copyDesktopItems,
   nix-update-script,
   wails,
-  webkitgtk_6_0,
+  webkitgtk_4_1,
   pkg-config,
   libsoup_3,
   tree,
@@ -112,7 +112,7 @@ in
     ];
 
     buildInputs = [
-      webkitgtk_6_0
+      webkitgtk_4_1
       libsoup_3
       gsettings-desktop-schemas # 添加 GSettings 模式
     ];
@@ -133,7 +133,7 @@ in
 
       # ===== 构建 =====
       export HOME=$(mktemp -d)
-      wails build -m -s -trimpath -skipbindings -devtools -tags webkit2_40 -o $pname
+      wails build -m -s -trimpath -skipbindings -devtools -tags webkit2_41 -o $pname
 
       runHook postBuild
     '';
