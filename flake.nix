@@ -1,5 +1,3 @@
-{
-  description = "MiyakoMeow's personal NUR repository";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nvfetcher = {

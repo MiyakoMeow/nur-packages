@@ -170,9 +170,14 @@ jobs:
           execute_command_array() {
             local script_array=("$@")
             echo "执行更新命令(数组): ${script_array[@]}"
+            echo "数组长度: ${#script_array[@]}"
 
             # 检查是否需要替换 nix-update 命令
-            if [[ "${script_array[0]}" =~ ^/nix/store/.*-nix-update/bin/nix-update$ ]]; then
+            echo "检查第一个参数: '${script_array[0]}'"
+            echo "正则表达式测试: [[ '${script_array[0]}' =~ ^/nix/store/.*-nix-update.*bin/nix-update$ ]]"
+
+            if [[ "${script_array[0]}" =~ ^/nix/store/.*-nix-update.*bin/nix-update$ ]]; then
+              echo "匹配到 nix-update 路径模式"
               echo "检测到 nix-update 路径，使用 nix run nixpkgs#nix-update 替代"
               # 构建新的命令数组，使用 nix run nixpkgs#nix-update 并保留其他参数
               local new_command=("nix" "run" "nixpkgs#nix-update")
