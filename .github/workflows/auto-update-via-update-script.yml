@@ -290,17 +290,13 @@ jobs:
         if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
           echo "验证包配置..."
-          nix-env -f . -qa \* --meta --xml \
-            --option allow-import-from-derivation true \
-            --drv-path --show-trace \
-            -I nixpkgs=$(nix-instantiate --find-file nixpkgs) \
-            -I $PWD
+          nix flake show --json | jq '.packages."x86_64-linux"'
 
       - name: Build package with logs
         if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
           echo "开始完整构建（带日志输出）..."
-          nix shell -f '<nixpkgs>' nix-build-uncached -c nix-build-uncached ci.nix -A cacheOutputs --print-build-logs
+          nix build .#cacheOutputs --print-build-logs
 
       - name: Enable Pull Request Automerge
         if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
