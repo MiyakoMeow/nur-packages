@@ -290,7 +290,7 @@ jobs:
         if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
           echo "验证包配置: ${{ matrix.package }}"
-          nix flake show .#${{ matrix.package }}
+          nix eval .#${{ matrix.package }}
 
       - name: Build package with logs
         if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
