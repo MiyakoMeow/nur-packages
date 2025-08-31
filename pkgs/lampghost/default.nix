@@ -28,7 +28,7 @@ let
     owner = "Catizard";
     repo = "lampghost";
     rev = "v${version}";
-    sha256 = "sha256-76BAnzzvn2TDuS6lAAqzO5D2jUHWGR3bsM/r6qhUVLE=";
+    sha256 = "sha256-PM6+QG9pBBDqaK60i4IXZ56UgXJ+DoOZqKJ/+HjdMjo=";
   };
 
   # 元信息
@@ -56,7 +56,7 @@ let
     # 关键配置：完全离线构建
     npmDeps = fetchNpmDeps {
       src = "${src.outPath}/frontend";
-      hash = "sha256-euYZfQ2MpiwACECzRdwx7RVp4cGdpa4wpcd/phkARIU="; # 首次构建后替换
+      hash = "sha256-YYF6RfA3uE65QdwuJMV+NSvGYtmZRxwrVbQtijNyHRE="; # 首次构建后替换
     };
 
     # 配置离线环境
