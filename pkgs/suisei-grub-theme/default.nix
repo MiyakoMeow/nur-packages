@@ -30,7 +30,6 @@ stdenvNoCC.mkDerivation rec {
     updateScript = nix-update-script {
       attrPath = "suisei-grub-theme";
       extraArgs = [
-        "--flake"
         "--version=branch"
       ];
     };

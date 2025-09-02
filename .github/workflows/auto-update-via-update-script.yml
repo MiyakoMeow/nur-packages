@@ -177,6 +177,7 @@ jobs:
 
               # 构建新的命令数组，直接调用 nix-update 并保留其他参数
               local new_command=("nix-update")
+              new_command+=("--flake")
               for ((i=1; i<${#script_array[@]}; i++)); do
                 new_command+=("${script_array[$i]}")
               done

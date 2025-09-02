@@ -35,7 +35,6 @@ let
     passthru.updateScript = nix-update-script {
       attrPath = pname;
       extraArgs = [
-        "--flake"
         "--version=branch"
       ];
     };

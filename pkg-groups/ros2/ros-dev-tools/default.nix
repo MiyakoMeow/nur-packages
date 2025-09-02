@@ -66,7 +66,6 @@ stdenv.mkDerivation rec {
     updateScript = nix-update-script {
       attrPath = "ros2.ros-dev-tools";
       extraArgs = [
-        "--flake"
         "--version=branch"
       ];
     };

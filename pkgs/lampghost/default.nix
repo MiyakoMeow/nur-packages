@@ -81,7 +81,6 @@ buildGoModule (finalAttrs: rec {
     updateScript = nix-update-script {
       attrPath = "${pname}";
       extraArgs = [
-        "--flake"
         "--subpackage"
         "frontend"
       ];
