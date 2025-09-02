@@ -2,6 +2,7 @@
   lib,
   stdenv,
   fetchFromGitHub,
+  nix-update-script,
   makeWrapper,
   docker,
   bash,
@@ -60,6 +61,16 @@ stdenv.mkDerivation rec {
 
     runHook postInstall
   '';
+
+  passthru = {
+    updateScript = nix-update-script {
+      attrPath = "ros2.ros-dev-tools";
+      extraArgs = [
+        "--flake"
+        "--version=branch"
+      ];
+    };
+  };
 
   meta = with lib; {
     description = "ROS development tools with Docker integration";

@@ -2,6 +2,7 @@
   lib,
   stdenvNoCC,
   fetchFromGitHub,
+  nix-update-script,
 }:
 stdenvNoCC.mkDerivation rec {
   pname = "suisei-grub-theme";
@@ -24,6 +25,16 @@ stdenvNoCC.mkDerivation rec {
       exit 1
     fi
   '';
+
+  passthru = {
+    updateScript = nix-update-script {
+      attrPath = "suisei-grub-theme";
+      extraArgs = [
+        "--flake"
+        "--version=branch"
+      ];
+    };
+  };
 
   # 禁用自动解压步骤
   dontUnpack = true;
