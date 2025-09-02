@@ -116,7 +116,8 @@ jobs:
       matrix:
         package: ${{ fromJson(needs.prepare.outputs.package_list) }}
     outputs:
-      packages: ${{ steps.collect.outputs.packages }}
+      pr_data: ${{ steps.create-pull-request.outputs.pr_data }}
+      has_update: ${{ steps.update.outputs.has_update }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -270,68 +271,95 @@ jobs:
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
 
-      - name: Switch to update branch
-        if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
+      - name: Collect PR data
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
-          echo "切换到更新分支: ${{ steps.update.outputs.branch_name }}"
-          git checkout ${{ steps.update.outputs.branch_name }}
+          echo "pr_data={\"number\": \"${{ steps.create-pull-request.outputs.pull-request-number }}\", \"package\": \"${{ matrix.package }}\"}" >> $GITHUB_OUTPUT
+        id: collect-pr
 
-      - name: Setup Nix environment
-        if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
+  wait-for-ci:
+    needs: update-package
+    if: needs.update-package.outputs.has_update == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI completion
         run: |
-          echo "设置 Nix 环境变量"
-          export NIXPKGS_ALLOW_UNFREE=1
-          export NIXPKGS_ALLOW_BROKEN=1
-          export NIXPKGS_ALLOW_INSECURE=1
-          echo "NIXPKGS_ALLOW_UNFREE=1" >> $GITHUB_ENV
-          echo "NIXPKGS_ALLOW_BROKEN=1" >> $GITHUB_ENV
-          echo "NIXPKGS_ALLOW_INSECURE=1" >> $GITHUB_ENV
-
-      - name: Validate package configuration
-        if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          echo "验证包配置: ${{ matrix.package }}"
-          nix eval .#${{ matrix.package }}
-
-      - name: Build package with logs
-        if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          echo "开始构建包: ${{ matrix.package }}"
-          nix build .#${{ matrix.package }} --print-build-logs
-
-      - name: Enable Pull Request Automerge
-        if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.AUTOMERGE_TOKEN }}
-          pull-request-number: ${{ steps.create-pull-request.outputs.pull-request-number }}
-          merge-method: merge
-
-      - name: Delete source branch after merge
-        if: steps.update.outputs.has_update == 'true' && steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          # 等待一段时间让PR合并完成
-          sleep 10
-
-          # 检查PR是否已合并
-          PR_STATUS=$(gh api "repos/${{ github.repository }}/pulls/${{ steps.create-pull-request.outputs.pull-request-number }}" --jq '.merged')
-
-          if [ "$PR_STATUS" = "true" ]; then
-            echo "PR已合并，开始删除源分支"
-            BRANCH_NAME="${{ steps.update.outputs.branch_name }}"
-
-            # 删除分支
-            gh api \
-              --method DELETE \
-              "repos/${{ github.repository }}/git/refs/heads/$BRANCH_NAME" \
-              -H "Accept: application/vnd.github.v3+json" \
-              || echo "分支 $BRANCH_NAME 删除失败或已不存在"
-
-            echo "✅ 分支 $BRANCH_NAME 删除完成"
-          else
-            echo "PR尚未合并，跳过分支删除"
+          # 解析PR数据
+          PR_DATA='${{ needs.update-package.outputs.pr_data }}'
+          if [ -z "$PR_DATA" ] || [ "$PR_DATA" = "null" ]; then
+            echo "没有PR数据，跳过等待"
+            exit 0
+          fi
+          
+          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
+          PACKAGE=$(echo "$PR_DATA" | jq -r '.package')
+          
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "无效的PR编号"
+            exit 1
+          fi
+          
+          echo "等待PR #$PR_NUMBER ($PACKAGE) 的CI完成"
+          
+          # 等待CI完成
+          MAX_WAIT=1800  # 30分钟超时
+          WAIT_TIME=0
+          
+          while [ $WAIT_TIME -lt $MAX_WAIT ]; do
+            # 获取PR的提交SHA
+            HEAD_SHA=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '.head.sha')
+            
+            # 获取该提交的所有检查
+            CHECK_RUNS=$(gh api "repos/${{ github.repository }}/commits/$HEAD_SHA/check-runs" --jq '.check_runs')
+            
+            # 检查状态
+            TOTAL_CHECKS=$(echo "$CHECK_RUNS" | jq length)
+            COMPLETED_CHECKS=$(echo "$CHECK_RUNS" | jq '[.[] | select(.status == "completed")] | length')
+            FAILED_CHECKS=$(echo "$CHECK_RUNS" | jq '[.[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out")] | length')
+            
+            echo "检查状态: $COMPLETED_CHECKS/$TOTAL_CHECKS 已完成"
+            
+            # 如果有失败的检查，退出
+            if [ "$FAILED_CHECKS" -gt 0 ]; then
+              echo "发现失败的检查，停止等待"
+              FAILED_NAMES=$(echo "$CHECK_RUNS" | jq -r '.[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out") | .name')
+              echo "失败的检查: $FAILED_NAMES"
+              exit 1
+            fi
+            
+            # 如果所有检查都完成，退出循环
+            if [ "$COMPLETED_CHECKS" -eq "$TOTAL_CHECKS" ] && [ "$TOTAL_CHECKS" -gt 0 ]; then
+              echo "所有CI检查已完成"
+              break
+            fi
+            
+            echo "等待CI完成... (已等待 ${WAIT_TIME}s)"
+            sleep 30
+            WAIT_TIME=$((WAIT_TIME + 30))
+          done
+          
+          if [ $WAIT_TIME -ge $MAX_WAIT ]; then
+            echo "等待CI超时"
+            exit 1
           fi
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  enable-automerge:
+    needs: [update-package, wait-for-ci]
+    if: needs.wait-for-ci.result == 'success' && needs.update-package.outputs.has_update == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable Pull Request Automerge
+        run: |
+          # 解析PR数据
+          PR_DATA='${{ needs.update-package.outputs.pr_data }}'
+          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
+          PACKAGE=$(echo "$PR_DATA" | jq -r '.package')
+          
+          echo "启用PR #$PR_NUMBER ($PACKAGE) 的自动合并"
+          
+          # 启用自动合并
+          gh pr merge "$PR_NUMBER" --auto --merge
+        env:
           GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
-
-
