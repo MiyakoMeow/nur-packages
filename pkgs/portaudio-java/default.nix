@@ -17,8 +17,12 @@ stdenv.mkDerivation {
     ref = "main";
   };
 
-  nativeBuildInputs = [cmake gradle jdk];
-  buildInputs = [portaudio];
+  nativeBuildInputs = [
+    cmake
+    gradle
+    jdk
+  ];
+  buildInputs = [ portaudio ];
 
   # 设置必要的环境变量
   JAVA_HOME = jdk.home;

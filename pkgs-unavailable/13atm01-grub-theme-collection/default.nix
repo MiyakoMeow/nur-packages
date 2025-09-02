@@ -5,7 +5,8 @@
   fetchFromGitHub,
   nix-update-script,
   ...
-}: let
+}:
+let
   # 仓库信息
   owner = "13atm01";
   repo = "GRUB-Theme";
@@ -14,7 +15,12 @@
   version = "Lyco-v1.0-unstable-2025-06-15";
   # 获取仓库源码
   src = fetchFromGitHub {
-    inherit owner repo rev hash;
+    inherit
+      owner
+      repo
+      rev
+      hash
+      ;
   };
 
   metaPkg = stdenvNoCC.mkDerivation rec {
@@ -45,7 +51,8 @@
   themeList = lib.importJSON ./theme-list.json;
 
   # 为每个主题创建包的函数
-  mkThemePackage = packageName: themePath:
+  mkThemePackage =
+    packageName: themePath:
     stdenvNoCC.mkDerivation {
       name = packageName;
       pname = packageName;
@@ -70,7 +77,7 @@
       '';
 
       # Self updateScript
-      passthru.updateScript = [./update.sh];
+      passthru.updateScript = [ ./update.sh ];
 
       meta = with lib; {
         description = "GRUB2 theme '${packageName}' from ${owner}/${repo}";
@@ -79,7 +86,10 @@
         platforms = platforms.all;
       };
     };
-in {
+in
+{
   # 所有主题包的集合
-  packagesInSet = lib.mapAttrs mkThemePackage themeList // {meta = metaPkg;};
+  packagesInSet = lib.mapAttrs mkThemePackage themeList // {
+    meta = metaPkg;
+  };
 }

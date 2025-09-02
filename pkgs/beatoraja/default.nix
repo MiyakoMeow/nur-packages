@@ -10,60 +10,58 @@
   copyDesktopItems,
   unzip,
   ...
-}: let
+}:
+let
   # 公共配置函数
-  commonAttrs = {
-    pname ? sources.beatoraja.pname,
-    version ? sources.beatoraja.version,
-    beatorajaVersion ? sources.beatoraja.version,
-    beatorajaArchive ? sources.beatoraja.src,
-    meta ?
-      with lib; {
+  commonAttrs =
+    {
+      pname ? sources.beatoraja.pname,
+      version ? sources.beatoraja.version,
+      beatorajaVersion ? sources.beatoraja.version,
+      beatorajaArchive ? sources.beatoraja.src,
+      meta ? with lib; {
         description = "A modern BMS Player";
         homepage = "https://www.mocha-repository.info/download.php";
         license = licenses.gpl3;
         mainProgram = pname;
       },
-    ReplacingJarSource ? null,
-    javaPackageWithJavaFX ? (pkgs.jdk.override {
-      headless = false;
-      enableJavaFX = true;
-    }),
-    portaudioJava ? pkgs.callPackage ../portaudio-java {},
-    useOBSVkCapture ? true,
-  }: let
-    # 根据 portaudioJava 是否存在设置类路径和库路径
-    portaudioClasspath =
-      if portaudioJava != null
-      then ":${portaudioJava}/share/java/*"
-      else "";
+      ReplacingJarSource ? null,
+      javaPackageWithJavaFX ? (
+        pkgs.jdk.override {
+          headless = false;
+          enableJavaFX = true;
+        }
+      ),
+      portaudioJava ? pkgs.callPackage ../portaudio-java { },
+      useOBSVkCapture ? true,
+    }:
+    let
+      # 根据 portaudioJava 是否存在设置类路径和库路径
+      portaudioClasspath = if portaudioJava != null then ":${portaudioJava}/share/java/*" else "";
 
-    portaudioLibpath =
-      if portaudioJava != null
-      then "-Djava.library.path=${portaudioJava}/lib"
-      else "";
-  in
+      portaudioLibpath = if portaudioJava != null then "-Djava.library.path=${portaudioJava}/lib" else "";
+    in
     stdenv.mkDerivation rec {
       inherit pname version meta;
 
-      srcs =
-        [beatorajaArchive]
-        ++ lib.optional (ReplacingJarSource != null) ReplacingJarSource;
+      srcs = [ beatorajaArchive ] ++ lib.optional (ReplacingJarSource != null) ReplacingJarSource;
       sourceRoot = ".";
 
-      nativeBuildInputs = [unzip copyDesktopItems];
-      buildInputs =
-        [
-          javaPackageWithJavaFX
-          pkgs.gtk3
-          pkgs.gnome-themes-extra
-          pkgs.colord-gtk
-          pkgs.xorg.xrandr
-          pkgs.xorg.libXrandr
-          pkgs.ffmpeg
-        ]
-        ++ lib.optional useOBSVkCapture pkgs.obs-studio-plugins.obs-vkcapture
-        ++ lib.optional (portaudioJava != null) portaudioJava;
+      nativeBuildInputs = [
+        unzip
+        copyDesktopItems
+      ];
+      buildInputs = [
+        javaPackageWithJavaFX
+        pkgs.gtk3
+        pkgs.gnome-themes-extra
+        pkgs.colord-gtk
+        pkgs.xorg.xrandr
+        pkgs.xorg.libXrandr
+        pkgs.ffmpeg
+      ]
+      ++ lib.optional useOBSVkCapture pkgs.obs-studio-plugins.obs-vkcapture
+      ++ lib.optional (portaudioJava != null) portaudioJava;
 
       JAVA_HOME = javaPackageWithJavaFX.home;
 
@@ -206,29 +204,33 @@
           desktopName = pname;
           exec = pname;
           comment = meta.description;
-          mimeTypes = ["application/java"];
-          categories = ["Game"];
+          mimeTypes = [ "application/java" ];
+          categories = [ "Game" ];
           terminal = false;
         })
       ];
     };
-in rec {
+in
+rec {
   # beatoraja 包定义
-  beatoraja = {...}:
+  beatoraja =
+    { ... }:
     commonAttrs {
     };
 
   # lr2oraja 包定义
-  lr2oraja = {...}: let
-    pname = "lr2oraja";
-    version = "build11611350155";
-    lr2orajaJar =
-      (fetchzip {
-        url = "https://github.com/wcko87/lr2oraja/releases/download/${version}/LR2oraja.zip";
-        hash = "sha256-fjhvJRjpSUEAwPmxgoyKvEFWzb4ZOiUASUhFjG9CPTg=";
-      })
-      + "/beatoraja.jar";
-  in
+  lr2oraja =
+    { ... }:
+    let
+      pname = "lr2oraja";
+      version = "build11611350155";
+      lr2orajaJar =
+        (fetchzip {
+          url = "https://github.com/wcko87/lr2oraja/releases/download/${version}/LR2oraja.zip";
+          hash = "sha256-fjhvJRjpSUEAwPmxgoyKvEFWzb4ZOiUASUhFjG9CPTg=";
+        })
+        + "/beatoraja.jar";
+    in
     commonAttrs {
       inherit pname version;
       ReplacingJarSource = lr2orajaJar;
@@ -241,19 +243,21 @@ in rec {
     };
 
   # lr2oraja-endlessdream 包定义
-  lr2oraja-endlessdream = {...}: let
-    pname = "lr2oraja-endlessdream";
-    version = "0.2.1";
-    beatorajaVersion = "0.8.7";
-    beatorajaArchive = fetchurl {
-      url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
-      hash = "sha256-rkM8z9Oyqy3dS9zWgTQyjeEQg7Nax1V5hohL/neCNr8=";
-    };
-    lr2orajaJar = fetchurl {
-      url = "https://github.com/seraxis/lr2oraja-endlessdream/releases/download/v${version}/lr2oraja-${beatorajaVersion}-endlessdream-linux-${version}.jar";
-      hash = "sha256-czkFZP3gn9ieq5w6NLCvvSTufgesFhtD7YGEwyD3HYs=";
-    };
-  in
+  lr2oraja-endlessdream =
+    { ... }:
+    let
+      pname = "lr2oraja-endlessdream";
+      version = "0.2.1";
+      beatorajaVersion = "0.8.7";
+      beatorajaArchive = fetchurl {
+        url = "https://www.mocha-repository.info/download/beatoraja${beatorajaVersion}-modernchic.zip";
+        hash = "sha256-rkM8z9Oyqy3dS9zWgTQyjeEQg7Nax1V5hohL/neCNr8=";
+      };
+      lr2orajaJar = fetchurl {
+        url = "https://github.com/seraxis/lr2oraja-endlessdream/releases/download/v${version}/lr2oraja-${beatorajaVersion}-endlessdream-linux-${version}.jar";
+        hash = "sha256-czkFZP3gn9ieq5w6NLCvvSTufgesFhtD7YGEwyD3HYs=";
+      };
+    in
     commonAttrs {
       inherit pname version;
       ReplacingJarSource = lr2orajaJar;
@@ -266,8 +270,8 @@ in rec {
       inherit beatorajaVersion beatorajaArchive;
     };
   packagesInSet = {
-    beatoraja = callPackage beatoraja {};
-    lr2oraja = callPackage lr2oraja {};
-    lr2oraja-endlessdream = callPackage lr2oraja-endlessdream {};
+    beatoraja = callPackage beatoraja { };
+    lr2oraja = callPackage lr2oraja { };
+    lr2oraja-endlessdream = callPackage lr2oraja-endlessdream { };
   };
 }

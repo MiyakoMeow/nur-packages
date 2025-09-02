@@ -14,8 +14,12 @@ stdenv.mkDerivation rec {
   # 动态版本格式：日期-短提交哈希 (兼容 nix-update)
   version = "${sources.ros-dev-tools.date}-${lib.strings.substring 0 7 src.rev}";
 
-  nativeBuildInputs = [makeWrapper];
-  buildInputs = [docker bash coreutils];
+  nativeBuildInputs = [ makeWrapper ];
+  buildInputs = [
+    docker
+    bash
+    coreutils
+  ];
 
   # 无实际构建步骤 (仅脚本工具)
   dontBuild = true;
@@ -42,7 +46,12 @@ stdenv.mkDerivation rec {
 
     # 确保PATH中有docker和coreutils
     wrapProgram $out/bin/ros-dev-tools \
-      --prefix PATH : ${lib.makeBinPath [docker coreutils]}
+      --prefix PATH : ${
+        lib.makeBinPath [
+          docker
+          coreutils
+        ]
+      }
 
     runHook postInstall
   '';
@@ -51,10 +60,10 @@ stdenv.mkDerivation rec {
     description = "ROS development tools with Docker integration";
     homepage = "https://github.com/DSPEngineer/ros-dev-tools";
     license = licenses.unlicense; # 根据实际仓库许可证调整
-    maintainers = [];
+    maintainers = [ ];
     platforms = platforms.all;
     # 标记为不稳定版本 (无正式 release)
     broken = false;
-    hydraPlatforms = [];
+    hydraPlatforms = [ ];
   };
 }

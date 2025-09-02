@@ -3,16 +3,19 @@
   stdenvNoCC,
   fetchurl,
   ...
-}: let
+}:
+let
   # 从本地文件读取主题信息
   theme-info = lib.importJSON ./themes.json;
 
   # 单个主题包构建函数 (原 theme-package.nix 内容内联)
-  mkThemePackage = pname: {
-    url,
-    sha256,
-    tag,
-  }:
+  mkThemePackage =
+    pname:
+    {
+      url,
+      sha256,
+      tag,
+    }:
     stdenvNoCC.mkDerivation {
       inherit pname;
       version = tag;
@@ -47,7 +50,8 @@
 
   # 创建所有主题包集合
   theme-packages = lib.mapAttrs mkThemePackage theme-info;
-in {
+in
+{
   # 新变量，暴露所有主题包
   packagesInSet = theme-packages;
 }

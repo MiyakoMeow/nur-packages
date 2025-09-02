@@ -13,7 +13,8 @@
   libXi,
   libXtst,
   ...
-}: let
+}:
+let
   # JDK 版本配置
   version = "21.0.7+9";
 
@@ -28,7 +29,9 @@
   };
 
   # 获取当前平台的架构标识
-  platform = platformMap.${stdenv.hostPlatform.system} or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
+  platform =
+    platformMap.${stdenv.hostPlatform.system}
+      or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
 
   # 构建下载URL
   srcUrl = "https://download.bell-sw.com/java/${version}/bellsoft-jdk${version}-${platform}.tar.gz";
@@ -43,65 +46,65 @@
     "macos-aarch64" = "f95b40ecffec05c548f2bb69bc0ae6050162a073";
   };
 in
-  stdenv.mkDerivation rec {
-    pname = "liberica-jdk-21";
-    inherit version;
+stdenv.mkDerivation rec {
+  pname = "liberica-jdk-21";
+  inherit version;
 
-    src = fetchurl {
-      url = srcUrl;
-      sha1 = sha1s.${platform};
-    };
+  src = fetchurl {
+    url = srcUrl;
+    sha1 = sha1s.${platform};
+  };
 
-    # 仅Linux需要自动修补二进制文件
-    nativeBuildInputs =
-      lib.optionals stdenv.isLinux [
-        autoPatchelfHook
-      ]
-      ++ lib.optionals addToPath [
-        makeWrapper
-      ];
-
-    buildInputs = lib.optionals stdenv.isLinux [
-      libz
-      alsa-lib # 解决 libasound.so.2 依赖
-      xorg.libX11 # 解决 libX11.so.6 依赖
-      xorg.libXext # 解决 libXext.so.6 依赖
-      libXrender # 解决 libXrender.so.1 依赖
-      libXi # 解决 libXi.so.6 依赖
-      libXtst # 解决 libXtst.so.6 依赖
+  # 仅Linux需要自动修补二进制文件
+  nativeBuildInputs =
+    lib.optionals stdenv.isLinux [
+      autoPatchelfHook
+    ]
+    ++ lib.optionals addToPath [
+      makeWrapper
     ];
 
-    # 无需配置和构建步骤
-    dontConfigure = true;
-    dontBuild = true;
+  buildInputs = lib.optionals stdenv.isLinux [
+    libz
+    alsa-lib # 解决 libasound.so.2 依赖
+    xorg.libX11 # 解决 libX11.so.6 依赖
+    xorg.libXext # 解决 libXext.so.6 依赖
+    libXrender # 解决 libXrender.so.1 依赖
+    libXi # 解决 libXi.so.6 依赖
+    libXtst # 解决 libXtst.so.6 依赖
+  ];
 
-    installPhase = ''
-      # 创建输出目录
-      mkdir -p $out
+  # 无需配置和构建步骤
+  dontConfigure = true;
+  dontBuild = true;
 
-      # 解压JDK到输出目录 (--strip-components=1 移除顶层目录)
-      tar xf $src -C $out --strip-components=1
+  installPhase = ''
+    # 创建输出目录
+    mkdir -p $out
 
-      # 注册命令行工具 (可选)
-      ${lib.optionalString addToPath ''
-        mkdir -p $out/bin
-        for binfile in $out/jdk-${version}/bin/*; do
-          # 创建包装脚本处理环境变量
-          makeWrapper "$binfile" "$out/bin/$(basename $binfile)" \
-            --set JAVA_HOME "$out"
-        done
-      ''}
-    '';
+    # 解压JDK到输出目录 (--strip-components=1 移除顶层目录)
+    tar xf $src -C $out --strip-components=1
 
-    # 设置环境钩子 (用于nix-shell)
-    setupHook = ./setup-hook.sh;
+    # 注册命令行工具 (可选)
+    ${lib.optionalString addToPath ''
+      mkdir -p $out/bin
+      for binfile in $out/jdk-${version}/bin/*; do
+        # 创建包装脚本处理环境变量
+        makeWrapper "$binfile" "$out/bin/$(basename $binfile)" \
+          --set JAVA_HOME "$out"
+      done
+    ''}
+  '';
 
-    meta = with lib; {
-      description = "Libreica JDK, a certified build of OpenJDK by BellSoft";
-      homepage = "https://bell-sw.com/";
-      license = licenses.gpl2Classpath; # GPLv2 with Classpath exception
-      mainProgram = "java";
-      platforms = attrNames platformMap;
-      maintainers = [];
-    };
-  }
+  # 设置环境钩子 (用于nix-shell)
+  setupHook = ./setup-hook.sh;
+
+  meta = with lib; {
+    description = "Libreica JDK, a certified build of OpenJDK by BellSoft";
+    homepage = "https://bell-sw.com/";
+    license = licenses.gpl2Classpath; # GPLv2 with Classpath exception
+    mainProgram = "java";
+    platforms = attrNames platformMap;
+    maintainers = [ ];
+  };
+}

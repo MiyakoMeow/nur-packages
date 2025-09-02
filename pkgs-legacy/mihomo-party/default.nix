@@ -100,20 +100,22 @@ stdenv.mkDerivation rec {
     # 创建可执行文件链接到bin目录
     mkdir -p $out/bin
     makeWrapper $out/opt/mihomo-party/mihomo-party $out/bin/mihomo-party \
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [
-      glib
-      vulkan-loader
-      libglvnd
-      mesa
-      gtk3
-      libdrm
-    ]}" \
+      --prefix LD_LIBRARY_PATH : "${
+        lib.makeLibraryPath [
+          glib
+          vulkan-loader
+          libglvnd
+          mesa
+          gtk3
+          libdrm
+        ]
+      }" \
       --prefix VK_ICD_FILENAMES : "${vulkan-loader}/share/vulkan/icd.d/" \
       --prefix __EGL_VENDOR_LIBRARY_DIRS = "${pkgs.mesa}/share/glvnd/egl_vendor.d:${pkgs.libglvnd}/share/glvnd/egl_vendor.d" \
       --prefix LIBGL_DRIVERS_PATH : "${libglvnd}/lib:${vulkan-loader}/lib" \
       --prefix GTK_PATH : "${pkgs.gnome-settings-daemon}/lib/gtk-3.0/modules" \
       --set XDG_DATA_DIRS "${gtk3}/share/gsettings-schemas/${gtk3.name}" \
-      --prefix PATH : "${lib.makeBinPath [xorg.xrandr]}"
+      --prefix PATH : "${lib.makeBinPath [ xorg.xrandr ]}"
 
     # 安装桌面图标
     mkdir -p $out/share/icons
@@ -135,7 +137,7 @@ stdenv.mkDerivation rec {
       icon = "mihomo-party";
       comment = "Mihomo Party Application";
       desktopName = "Mihomo Party";
-      categories = ["Network"];
+      categories = [ "Network" ];
       startupWMClass = "mihomo-party"; # 确保窗口匹配
     })
   ];
@@ -144,7 +146,7 @@ stdenv.mkDerivation rec {
     description = "Mihomo Party Application";
     homepage = "https://mihomoparty.org"; # 替换实际官网
     license = licenses.mit; # 根据实际许可证修改
-    platforms = ["x86_64-linux"]; # 根据架构需求修改
+    platforms = [ "x86_64-linux" ]; # 根据架构需求修改
     mainProgram = "mihomo-party";
     broken = true;
   };

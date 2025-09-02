@@ -37,7 +37,7 @@ let
     homepage = "https://github.com/Catizard/lampghost";
     changelog = "https://github.com/Catizard/lampghost/releases/tag/v${version}";
     license = licenses.asl20;
-    maintainers = [];
+    maintainers = [ ];
     platforms = platforms.linux;
   };
 
@@ -96,98 +96,96 @@ let
     meta = metaCommon;
   });
 in
-  buildGoModule {
-    inherit pname version src;
+buildGoModule {
+  inherit pname version src;
 
-    vendorHash = "sha256-WU9sjoV1cfzt+Ol0pWwWeqwxGXnGsuz0BSI2GcCmh9Q=";
+  vendorHash = "sha256-WU9sjoV1cfzt+Ol0pWwWeqwxGXnGsuz0BSI2GcCmh9Q=";
 
-    nativeBuildInputs = [
-      wails
-      pkg-config
-      autoPatchelfHook
-      copyDesktopItems
-      tree
-      jq
-      glib # 添加 glib 用于编译模式
-      wrapGAppsHook # 添加 GTK 应用包装钩子
-    ];
+  nativeBuildInputs = [
+    wails
+    pkg-config
+    autoPatchelfHook
+    copyDesktopItems
+    tree
+    jq
+    glib # 添加 glib 用于编译模式
+    wrapGAppsHook # 添加 GTK 应用包装钩子
+  ];
 
-    buildInputs = [
-      webkitgtk_4_1
-      libsoup_3
-      gsettings-desktop-schemas # 添加 GSettings 模式
-    ];
+  buildInputs = [
+    webkitgtk_4_1
+    libsoup_3
+    gsettings-desktop-schemas # 添加 GSettings 模式
+  ];
 
-    preBuild = ''
-      # 创建目标目录并直接复制资源内容
-      mkdir -p frontend/dist
-      cp -r ${frontend}/* frontend/dist
+  preBuild = ''
+    # 创建目标目录并直接复制资源内容
+    mkdir -p frontend/dist
+    cp -r ${frontend}/* frontend/dist
 
-      # 调试：验证资源文件存在
-      echo "=== 前端资源验证 ==="
-      ls -l frontend/dist
-      [ -f "frontend/dist/index.html" ] || { echo "错误：index.html缺失"; exit 1; }
-    '';
+    # 调试：验证资源文件存在
+    echo "=== 前端资源验证 ==="
+    ls -l frontend/dist
+    [ -f "frontend/dist/index.html" ] || { echo "错误：index.html缺失"; exit 1; }
+  '';
 
-    buildPhase = ''
-      runHook preBuild
+  buildPhase = ''
+    runHook preBuild
 
-      # ===== 构建 =====
-      export HOME=$(mktemp -d)
-      wails build -m -s -trimpath -skipbindings -devtools -tags webkit2_41 -o $pname
+    # ===== 构建 =====
+    export HOME=$(mktemp -d)
+    wails build -m -s -trimpath -skipbindings -devtools -tags webkit2_41 -o $pname
 
-      runHook postBuild
-    '';
+    runHook postBuild
+  '';
 
-    installPhase = ''
-      runHook preInstall
+  installPhase = ''
+    runHook preInstall
 
-      # 安装主程序
-      install -Dm755 build/bin/$pname -t $out/bin
-      chmod +x $out/bin/$pname
-      cp -r frontend $out/bin
+    # 安装主程序
+    install -Dm755 build/bin/$pname -t $out/bin
+    chmod +x $out/bin/$pname
+    cp -r frontend $out/bin
 
-      # 安装GSettings模式（移动到安装阶段）
-      echo "=== 安装GSettings模式 ==="
-      mkdir -p $out/share/gsettings-schemas/${pname}-${version}
-      cp -r ${gsettings-desktop-schemas}/share/gsettings-schemas/* $out/share/gsettings-schemas/${pname}-${version}/
-      glib-compile-schemas $out/share/gsettings-schemas/${pname}-${version}
+    # 安装GSettings模式（移动到安装阶段）
+    echo "=== 安装GSettings模式 ==="
+    mkdir -p $out/share/gsettings-schemas/${pname}-${version}
+    cp -r ${gsettings-desktop-schemas}/share/gsettings-schemas/* $out/share/gsettings-schemas/${pname}-${version}/
+    glib-compile-schemas $out/share/gsettings-schemas/${pname}-${version}
 
-      # 安装桌面文件
-      copyDesktopItems
+    # 安装桌面文件
+    copyDesktopItems
 
-      runHook postInstall
-    '';
+    runHook postInstall
+  '';
 
-    # 桌面条目配置
-    desktopItems = [
-      (makeDesktopItem {
-        name = pname;
-        desktopName = "LampGhost";
-        comment = "Offline & Cross-platform beatoraja lamp viewer and more";
-        exec = pname;
-        categories = ["Game"];
-        startupNotify = true;
-        keywords = ["beatoraja"];
-      })
-    ];
+  # 桌面条目配置
+  desktopItems = [
+    (makeDesktopItem {
+      name = pname;
+      desktopName = "LampGhost";
+      comment = "Offline & Cross-platform beatoraja lamp viewer and more";
+      exec = pname;
+      categories = [ "Game" ];
+      startupNotify = true;
+      keywords = [ "beatoraja" ];
+    })
+  ];
 
-    # See https://github.com/Mic92/nix-update?tab=readme-ov-file#subpackages
-    inherit frontend;
-    passthru = {
-      updateScript = nix-update-script {
-        attrPath = pname;
-        extraArgs = [
-          "--flake"
-          "--subpackage"
-          "frontend"
-        ];
-      };
+  # See https://github.com/Mic92/nix-update?tab=readme-ov-file#subpackages
+  inherit frontend;
+  passthru = {
+    updateScript = nix-update-script {
+      attrPath = pname;
+      extraArgs = [
+        "--flake"
+        "--subpackage"
+        "frontend"
+      ];
     };
+  };
 
-    meta =
-      metaCommon
-      // {
-        mainProgram = pname;
-      };
-  }
+  meta = metaCommon // {
+    mainProgram = pname;
+  };
+}

@@ -128,7 +128,7 @@ stdenv.mkDerivation rec {
     homepage = "https://www.freedownloadmanager.org/";
     license = licenses.unfree;
     mainProgram = "fdm";
-    platforms = ["x86_64-linux"];
-    maintainers = []; # 替换为维护者信息
+    platforms = [ "x86_64-linux" ];
+    maintainers = [ ]; # 替换为维护者信息
   };
 }

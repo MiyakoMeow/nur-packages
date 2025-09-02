@@ -19,7 +19,8 @@
   pango,
   atk,
   ...
-}: let
+}:
+let
   execName = "lampghost";
   version = "0.2.2.1";
 
@@ -56,105 +57,107 @@
     icon = "lampghost";
     comment = "Offline & Cross-platform beatoraja lamp viewer and more";
     desktopName = "lampghost";
-    categories = ["Utility"];
+    categories = [ "Utility" ];
     startupNotify = false;
   };
 in
-  stdenv.mkDerivation {
-    pname = "lampghost-bin";
-    inherit version;
+stdenv.mkDerivation {
+  pname = "lampghost-bin";
+  inherit version;
 
-    src = fetchurl {
-      url = srcInfo.url;
-      sha256 = srcInfo.sha256;
-    };
+  src = fetchurl {
+    url = srcInfo.url;
+    sha256 = srcInfo.sha256;
+  };
 
-    nativeBuildInputs =
-      []
-      ++ lib.optionals stdenv.isLinux [autoPatchelfHook copyDesktopItems]
-      ++ lib.optionals stdenv.isDarwin [unzip]
-      ++ lib.optionals (platform == "x86_64-windows") [wine];
+  nativeBuildInputs =
+    [ ]
+    ++ lib.optionals stdenv.isLinux [
+      autoPatchelfHook
+      copyDesktopItems
+    ]
+    ++ lib.optionals stdenv.isDarwin [ unzip ]
+    ++ lib.optionals (platform == "x86_64-windows") [ wine ];
 
-    desktopItems = lib.optionals stdenv.isLinux [desktopItem];
+  desktopItems = lib.optionals stdenv.isLinux [ desktopItem ];
 
-    # 所有平台通用设置
-    dontUnpack = true;
-    dontConfigure = true;
-    dontBuild = true;
+  # 所有平台通用设置
+  dontUnpack = true;
+  dontConfigure = true;
+  dontBuild = true;
 
-    installPhase = ''
-      runHook preInstall
+  installPhase = ''
+    runHook preInstall
 
-      mkdir -p $out
+    mkdir -p $out
 
-      # 平台特定安装逻辑
-      ${lib.optionalString stdenv.isLinux ''
-        # Linux 安装
+    # 平台特定安装逻辑
+    ${lib.optionalString stdenv.isLinux ''
+      # Linux 安装
+      mkdir -p $out/bin
+      install -Dm755 $src $out/bin/lampghost
+    ''}
+
+    ${lib.optionalString stdenv.isDarwin ''
+        # macOS 安装
+        unzip $src
+        mkdir -p $out/Applications
+        cp -R lampghost.app $out/Applications/
+
+        # 创建启动包装器
         mkdir -p $out/bin
-        install -Dm755 $src $out/bin/lampghost
-      ''}
+        cat > $out/bin/lampghost <<EOF
+      #!/bin/sh
+      open -n $out/Applications/lampghost.app
+      EOF
+        chmod +x $out/bin/lampghost
+    ''}
 
-      ${lib.optionalString stdenv.isDarwin ''
-          # macOS 安装
-          unzip $src
-          mkdir -p $out/Applications
-          cp -R lampghost.app $out/Applications/
+    ${lib.optionalString (stdenv.hostPlatform.system == "x86_64-windows") ''
+        # Windows 安装 (通过Wine运行)
+        mkdir -p $out/bin $out/windows
+        install -Dm644 $src $out/windows/lampghost.exe
 
-          # 创建启动包装器
-          mkdir -p $out/bin
-          cat > $out/bin/lampghost <<EOF
-        #!/bin/sh
-        open -n $out/Applications/lampghost.app
-        EOF
-          chmod +x $out/bin/lampghost
-      ''}
+        # 创建Wine启动脚本
+        cat > $out/bin/lampghost <<EOF
+      #!/bin/sh
+      ${wine}/bin/wine $out/windows/lampghost.exe "\$@"
+      EOF
+        chmod +x $out/bin/lampghost
+    ''}
 
-      ${lib.optionalString (stdenv.hostPlatform.system == "x86_64-windows") ''
-          # Windows 安装 (通过Wine运行)
-          mkdir -p $out/bin $out/windows
-          install -Dm644 $src $out/windows/lampghost.exe
+    runHook postInstall
+  '';
 
-          # 创建Wine启动脚本
-          cat > $out/bin/lampghost <<EOF
-        #!/bin/sh
-        ${wine}/bin/wine $out/windows/lampghost.exe "\$@"
-        EOF
-          chmod +x $out/bin/lampghost
-      ''}
+  # Linux 二进制可能需要修复
+  buildInputs = lib.optionals stdenv.isLinux [
+    # 基础依赖
+    stdenv.cc.cc.lib
+    zlib
+    # GTK 相关依赖
+    gtk3
+    glib
+    gdk-pixbuf
+    cairo
+    pango
+    atk
+    # WebKitGTK 相关依赖
+    webkitgtk_4_1
+    libsoup_3
+  ];
 
-      runHook postInstall
-    '';
-
-    # Linux 二进制可能需要修复
-    buildInputs = lib.optionals stdenv.isLinux [
-      # 基础依赖
-      stdenv.cc.cc.lib
-      zlib
-      # GTK 相关依赖
-      gtk3
-      glib
-      gdk-pixbuf
-      cairo
-      pango
-      atk
-      # WebKitGTK 相关依赖
-      webkitgtk_4_1
-      libsoup_3
-    ];
-
-    passthru = {
-      updateScript =
-        nix-update-script {
-        };
+  passthru = {
+    updateScript = nix-update-script {
     };
+  };
 
-    meta = with lib; {
-      description = "Offline & Cross-platform beatoraja lamp viewer and more";
-      homepage = "https://github.com/Catizard/lampghost";
-      changelog = "https://github.com/Catizard/lampghost/releases/tag/v${version}";
-      license = licenses.asl20;
-      mainProgram = execName;
-      platforms = builtins.attrNames srcs;
-      maintainers = [];
-    };
-  }
+  meta = with lib; {
+    description = "Offline & Cross-platform beatoraja lamp viewer and more";
+    homepage = "https://github.com/Catizard/lampghost";
+    changelog = "https://github.com/Catizard/lampghost/releases/tag/v${version}";
+    license = licenses.asl20;
+    mainProgram = execName;
+    platforms = builtins.attrNames srcs;
+    maintainers = [ ];
+  };
+}
