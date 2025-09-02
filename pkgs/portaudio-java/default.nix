@@ -5,16 +5,18 @@
   jdk,
   cmake,
   gradle,
+  fetchFromGitHub,
   nix-update-script,
   ...
 }:
 stdenv.mkDerivation rec {
   pname = "portaudio-java";
-  version = "dev";
-  src = builtins.fetchGit {
-    url = "https://github.com/philburk/portaudio-java.git";
+  version = "0-unstable-2023-07-04";
+  src = fetchFromGitHub {
+    owner = "philburk";
+    repo = "portaudio-java";
     rev = "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b";
-    ref = "main";
+    sha256 = "sha256-t+Pqtgstd1uJjvD4GKomZHMeSECNLeQJOrz97o+lV2Q=";
   };
 
   nativeBuildInputs = [
@@ -80,7 +82,7 @@ stdenv.mkDerivation rec {
     updateScript = nix-update-script {
       attrPath = pname;
       extraArgs = [
-        "--version=unstable"
+        "--version=branch"
       ];
     };
   };
