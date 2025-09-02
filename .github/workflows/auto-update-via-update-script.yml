@@ -36,31 +36,30 @@ jobs:
         run: |
           # 使用Nix内置方法检测updateScript
           export NIXPKGS_ALLOW_UNFREE=1
-          
+          nix eval --impure --json .#packages.x86_64-linux --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
+
           # 创建空包列表文件
           echo "" > package-list.txt
-          
+
           # 声明关联数组用于命令去重
           declare -A unique_commands
-          
-          # 函数：处理单个包
-          process_package() {
-            local pkg_path="$1"
-            
+
+          # 过滤出有updateScript的包，并进行命令去重
+          while IFS= read -r pkg; do
             # 尝试获取updateScript
             set +e
-            script_output=$(nix eval --impure --json ".#legacyPackages.x86_64-linux.${pkg_path}.updateScript" 2>/tmp/error.log)
+            script_output=$(nix eval --impure --json ".#${pkg}.updateScript" 2>/tmp/error.log)
             ret=$?
             set -e
-            
+
             if [ $ret -ne 0 ]; then
-              return
+              continue
             fi
-            
+
             # 检查输出类型并标准化为命令数组
             script_type=$(echo "$script_output" | jq -r 'type')
             command_fingerprint=""
-            
+
             case "$script_type" in
               "array")
                 # 数组类型：直接排序
@@ -84,62 +83,31 @@ jobs:
                 fi
                 ;;
             esac
-            
+
             # 跳过无法识别的格式
             if [ -z "$command_fingerprint" ]; then
-              echo "跳过包 $pkg_path (不支持的updateScript格式: $script_type)"
-              return
+              echo "跳过包 $pkg (不支持的updateScript格式: $script_type)"
+              continue
             fi
-            
+
             # 检查命令是否已存在
             if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
               # 新命令，记录到列表
               unique_commands["$command_fingerprint"]=1
-              echo "$pkg_path" >> package-list.txt
+              echo "$pkg" >> package-list.txt
             else
-              echo "跳过包 $pkg_path (重复命令: ${command_fingerprint})"
+              echo "跳过包 $pkg (重复命令: ${command_fingerprint})"
             fi
-          }
-          
-          # 获取所有顶级属性
-          all_attrs=$(nix eval --impure --json .#legacyPackages.x86_64-linux --apply 'builtins.attrNames')
-          
-          echo "扫描所有顶级属性..."
-          for attr in $(echo "$all_attrs" | jq -r '.[]'); do
-            # 检查属性类型
-            attr_type=$(nix eval --impure --json ".#legacyPackages.x86_64-linux.${attr}" --apply 'x: if builtins.isAttrs x && !builtins.hasAttr "type" x then "attrs" else if builtins.hasAttr "type" x && (x.type == "derivation") then "derivation" else "other"')
-            
-            case "$attr_type" in
-              "derivation")
-                # 直接包
-                echo "发现直接包: $attr"
-                process_package "$attr"
-                ;;
-              "attrs")
-                # 可能是包组，检查其中的包
-                echo "发现包组: $attr"
-                group_packages=$(nix eval --impure --json ".#legacyPackages.x86_64-linux.${attr}" --apply 'builtins.attrNames')
-                for pkg in $(echo "$group_packages" | jq -r '.[]'); do
-                  pkg_type=$(nix eval --impure --json ".#legacyPackages.x86_64-linux.${attr}.${pkg}" --apply 'x: if builtins.hasAttr "type" x && (x.type == "derivation") then "derivation" else "other"')
-                  if [ "$pkg_type" = "derivation" ]; then
-                    echo "发现组内包: ${attr}.${pkg}"
-                    process_package "${attr}.${pkg}"
-                  fi
-                done
-                ;;
-              *)
-                echo "跳过属性 $attr (类型: $attr_type)"
-                ;;
-            esac
-          done
-          
+          done < all-packages.txt
+
           # 输出包列表和数量
           echo "找到 $(wc -l < package-list.txt) 个需要更新的包:"
           cat package-list.txt
-          
+
           # 设置输出变量
           echo "package_list=$(cat package-list.txt | jq -R -s -c 'split("\n") | map(select(. != ""))')" >> $GITHUB_OUTPUT
           echo "package_count=$(wc -l < package-list.txt | awk '{print $1}')" >> $GITHUB_OUTPUT
+
   update-package:
     needs: prepare
     runs-on: ubuntu-latest
@@ -196,7 +164,7 @@ jobs:
 
           # 获取updateScript并处理不同类型
           echo "获取包 ${{ matrix.package }} 的updateScript"
-          script_json=$(nix eval --impure --json ".#legacyPackages.x86_64-linux.${{ matrix.package }}.updateScript")
+          script_json=$(nix eval --impure --json ".#${{ matrix.package }}.updateScript")
           script_type=$(echo "$script_json" | jq -r 'type')
 
           # 函数：处理 nix-update 命令替换并执行
