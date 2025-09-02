@@ -1,14 +1,18 @@
 {
   lib,
   stdenvNoCC,
-  sources,
+  fetchFromGitHub,
 }:
-let
-  version = "dev";
-in
-stdenvNoCC.mkDerivation {
-  inherit version;
-  inherit (sources.suisei-grub-theme) pname src;
+stdenvNoCC.mkDerivation rec {
+  pname = "suisei-grub-theme";
+  version = "2ea338454810e6fd3ad04166bc84c576e29a6bea";
+
+  src = fetchFromGitHub {
+    owner = "kirakiraAZK";
+    repo = "suiGRUB";
+    rev = version;
+    sha256 = "sha256-besErd3N+iVGiReYGzo6H3JKsgQOyRaRbe6E0wKKW54=";
+  };
 
   installPhase = ''
     mkdir $out

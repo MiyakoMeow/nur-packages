@@ -1,8 +1,8 @@
-{ 
+{
   stdenv,
   lib,
   pkgs,
-  sources,
+
   fetchurl,
   fetchzip,
   callPackage,
@@ -14,19 +14,27 @@
 
 let
   commonAttrs = import ./lib/common.nix {
-    inherit 
-      stdenv lib pkgs sources fetchurl fetchzip 
-      callPackage makeDesktopItem copyDesktopItems unzip;
+    inherit
+      stdenv
+      lib
+      pkgs
+      fetchurl
+      fetchzip
+      callPackage
+      makeDesktopItem
+      copyDesktopItems
+      unzip
+      ;
   };
 
   pname = "lr2oraja";
   version = "build11611350155";
   lr2orajaJar =
     (fetchzip {
-        url = "https://github.com/wcko87/lr2oraja/releases/download/${version}/LR2oraja.zip";
-        hash = "sha256-fjhvJRjpSUEAwPmxgoyKvEFWzb4ZOiUASUhFjG9CPTg=";
-      })
-      + "/beatoraja.jar";
+      url = "https://github.com/wcko87/lr2oraja/releases/download/${version}/LR2oraja.zip";
+      hash = "sha256-fjhvJRjpSUEAwPmxgoyKvEFWzb4ZOiUASUhFjG9CPTg=";
+    })
+    + "/beatoraja.jar";
 in
 commonAttrs {
   inherit pname version;

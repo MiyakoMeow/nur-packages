@@ -1,8 +1,8 @@
-{ 
+{
   stdenv,
   lib,
   pkgs,
-  sources,
+
   fetchurl,
   fetchzip,
   callPackage,
@@ -14,9 +14,17 @@
 
 let
   commonAttrs = import ./lib/common.nix {
-    inherit 
-      stdenv lib pkgs sources fetchurl fetchzip 
-      callPackage makeDesktopItem copyDesktopItems unzip;
+    inherit
+      stdenv
+      lib
+      pkgs
+      fetchurl
+      fetchzip
+      callPackage
+      makeDesktopItem
+      copyDesktopItems
+      unzip
+      ;
   };
 in
 commonAttrs {

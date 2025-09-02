@@ -1,8 +1,7 @@
-{ 
+{
   stdenv,
   lib,
   pkgs,
-  sources,
   fetchurl,
   fetchzip,
   callPackage,
@@ -13,10 +12,13 @@
 }:
 # 公共配置函数
 {
-  pname ? sources.beatoraja.pname,
-  version ? sources.beatoraja.version,
-  beatorajaVersion ? sources.beatoraja.version,
-  beatorajaArchive ? sources.beatoraja.src,
+  pname ? "beatoraja",
+  version ? "0.8.8",
+  beatorajaVersion ? "0.8.8",
+  beatorajaArchive ? fetchurl {
+    url = "https://www.mocha-repository.info/download/beatoraja0.8.8-modernchic.zip";
+    sha256 = "sha256-yJwokOldNCUdvPtXqy1OL2ESGp446/aZBQevetGlp7Q=";
+  },
   meta ? with lib; {
     description = "A modern BMS Player";
     homepage = "https://www.mocha-repository.info/download.php";

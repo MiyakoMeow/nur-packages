@@ -1,7 +1,7 @@
 {
   lib,
   stdenv,
-  sources,
+  fetchFromGitHub,
   makeWrapper,
   docker,
   bash,
@@ -9,10 +9,15 @@
   ...
 }:
 stdenv.mkDerivation rec {
-  inherit (sources.ros-dev-tools) pname src;
+  pname = "ros-dev-tools";
+  version = "2eedebbfe100e21121fefa816b6ea43707545b16";
 
-  # 动态版本格式：日期-短提交哈希 (兼容 nix-update)
-  version = "${sources.ros-dev-tools.date}-${lib.strings.substring 0 7 src.rev}";
+  src = fetchFromGitHub {
+    owner = "DSPEngineer";
+    repo = "ros-dev-tools";
+    rev = version;
+    sha256 = "sha256-/b2zFBJMTwD/VQDEk7UoiZqmsvl7iFzSTBPzT0hRc4I=";
+  };
 
   nativeBuildInputs = [ makeWrapper ];
   buildInputs = [

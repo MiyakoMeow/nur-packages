@@ -1,8 +1,8 @@
-{ 
+{
   stdenv,
   lib,
   pkgs,
-  sources,
+
   fetchurl,
   fetchzip,
   callPackage,
