@@ -8,7 +8,7 @@
   nix-update-script,
   ...
 }:
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "portaudio-java";
   version = "dev";
   src = builtins.fetchGit {
