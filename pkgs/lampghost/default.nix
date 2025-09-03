@@ -12,7 +12,7 @@
   makeDesktopItem,
   autoPatchelfHook,
   nix-update-script,
-  ...
+  writableTmpDirAsHomeHook,
 }:
 
 buildGoModule (finalAttrs: rec {
@@ -22,7 +22,7 @@ buildGoModule (finalAttrs: rec {
   src = fetchFromGitHub {
     owner = "Catizard";
     repo = "lampghost";
-    rev = "v${finalAttrs.version}";
+    tag = "v${finalAttrs.version}";
     hash = "sha256-PM6+QG9pBBDqaK60i4IXZ56UgXJ+DoOZqKJ/+HjdMjo=";
   };
 
@@ -44,6 +44,7 @@ buildGoModule (finalAttrs: rec {
     nodejs
     npmHooks.npmConfigHook
     copyDesktopItems
+    writableTmpDirAsHomeHook
   ];
 
   buildInputs = [ webkitgtk_4_1 ];
@@ -51,7 +52,6 @@ buildGoModule (finalAttrs: rec {
   buildPhase = ''
     runHook preBuild
 
-    export HOME=$(mktemp -d)
     wails build -m -trimpath -devtools -tags webkit2_41 -o ${pname}
 
     runHook postBuild
