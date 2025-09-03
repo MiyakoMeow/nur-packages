@@ -7,15 +7,16 @@
   gradle,
   fetchFromGitHub,
   nix-update-script,
+  ...
 }:
-stdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation rec {
   pname = "portaudio-java";
   version = "0-unstable-2023-07-04";
   src = fetchFromGitHub {
     owner = "philburk";
     repo = "portaudio-java";
     rev = "2ec5cc47d6f8abe85ddb09c34e69342bfe72c60b";
-    hash = "sha256-t+Pqtgstd1uJjvD4GKomZHMeSECNLeQJOrz97o+lV2Q=";
+    sha256 = "sha256-t+Pqtgstd1uJjvD4GKomZHMeSECNLeQJOrz97o+lV2Q=";
   };
 
   nativeBuildInputs = [
@@ -25,16 +26,14 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   buildInputs = [ portaudio ];
 
-  # Set up necessary environment variables
-  env = {
-    JAVA_HOME = jdk.home;
-    GRADLE_HOME = gradle;
-  };
+  # 设置必要的环境变量
+  JAVA_HOME = jdk.home;
+  GRADLE_HOME = gradle;
 
-  # Fix CMake installation path issue
+  # 修复CMake安装路径问题
   cmakeFlags = [
     "-DCMAKE_INSTALL_PREFIX=${placeholder "out"}"
-    # Fix gradlew cannot find library issue
+    # 修复gradlew找不到库问题
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_BUILD_TYPE=Release"
   ];
@@ -44,19 +43,19 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   buildPhase = ''
-    # Only build, do not install
+    # 仅构建不安装
     make
 
-    # Key modification 1: Manually locate and prepare library files
+    # 关键修改3：手动定位并准备库文件
     JNI_LIB_DIR=$(find . -type d -path "*/jni" | head -1)
     mkdir -p native-libs
     find $JNI_LIB_DIR -name '*.so' -exec cp {} native-libs/ \;
 
-    # Key modification 2: Set Java and JNI library paths
+    # 关键修改4：设置Java和JNI库路径
     export JAVA_LIBRARY_PATH=$PWD/native-libs:$JAVA_LIBRARY_PATH
     export LD_LIBRARY_PATH=$PWD/native-libs:$LD_LIBRARY_PATH
 
-    # Build Java part
+    # 构建Java部分
     export GRADLE_USER_HOME=$(mktemp -d)
     gradle --no-daemon -Djava.library.path=$PWD/native-libs assemble
   '';
@@ -64,36 +63,33 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     echo "Installing jportaudio..."
 
-    # Install JAR files
+    # 安装JAR文件
     mkdir -p $out/share/java
     cp build/libs/*.jar $out/share/java/
 
-    # Install native libraries
+    # 安装原生库
     mkdir -p $out/lib
     cp ./*.so $out/lib/
-
-    # Find the highest version of libjportaudio*.so
-    LIB_FILE=$(ls $out/lib/libjportaudio*.so 2>/dev/null | sort -V | tail -1)
-    if [ -n "$LIB_FILE" ]; then
-      ln -sf "$LIB_FILE" $out/lib/libjportaudio.so
+    if [ -f $out/lib/libjportaudio_0_1_0.so ]; then
+      ln -sf $out/lib/libjportaudio_0_1_0.so $out/lib/libjportaudio.so
     else
-      echo "No libjportaudio*.so files found!"
+      echo "libjportaudio_0_1_0.so not found!"
       return 1
     fi
   '';
 
   passthru = {
     updateScript = nix-update-script {
+      attrPath = pname;
       extraArgs = [
         "--version=branch"
       ];
     };
   };
 
-  meta = {
+  meta = with lib; {
     description = "Java wrapper for PortAudio audio library";
     homepage = "https://github.com/philburk/portaudio-java";
-    license = lib.licenses.mit;
-    maintainers = with lib.maintainers; [ ];
+    license = licenses.mit;
   };
-})
+}
