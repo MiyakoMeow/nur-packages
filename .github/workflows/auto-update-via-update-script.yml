@@ -40,7 +40,23 @@ jobs:
         run: |
           # 使用Nix内置方法检测updateScript
           export NIXPKGS_ALLOW_UNFREE=1
-          nix eval --impure --json .#packages.x86_64-linux --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
+          nix eval --impure --json --expr '
+            let
+              f = builtins.getFlake ".";
+              sys = "x86_64-linux";
+              lp = f.legacyPackages.${sys};
+              lib = lp.lib;
+              hasUS = pkg: (pkg ? passthru && pkg.passthru ? updateScript) || (pkg ? updateScript);
+              collect = attrs: path:
+                lib.concatMap (name:
+                  let v = attrs.${name}; p = path ++ [ name ]; in
+                  if lib.isDerivation v then
+                    if hasUS v then [ (lib.concatStringsSep "." p) ] else []
+                  else if lib.isAttrs v then collect v p
+                  else []
+                ) (builtins.attrNames attrs);
+            in collect lp []
+          ' | jq -r '.[]' > all-packages.txt
 
           # 创建空包列表文件
           : > package-list.txt
@@ -53,7 +69,20 @@ jobs:
           while IFS= read -r pkg; do
             # 尝试获取updateScript
             set +e
-            script_output=$(nix eval --impure --json --expr "let p=(builtins.getFlake \".\").packages.x86_64-linux; in (builtins.getAttr \"${pkg}\" p).updateScript" 2>/tmp/error.log)
+            script_output=$(nix eval --impure --json --expr "
+              let
+                f = builtins.getFlake \".\";
+                sys = \"x86_64-linux\";
+                lp = f.legacyPackages.${sys};
+                lib = lp.lib;
+                path = lib.splitString \".\" \"${pkg}\";
+                pkg = lib.attrByPath path null lp;
+              in
+                if pkg == null then throw \"no pkg\"
+                else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
+                else if (pkg ? updateScript) then pkg.updateScript
+                else throw \"no updateScript\"
+            " 2>/tmp/error.log)
             ret=$?
             set -e
 
@@ -181,7 +210,20 @@ jobs:
 
           # 获取updateScript并处理不同类型
           echo "获取包 ${{ matrix.package }} 的updateScript"
-          script_json=$(nix eval --impure --json --expr "let p=(builtins.getFlake \".\").packages.x86_64-linux; in (builtins.getAttr \"${{ matrix.package }}\" p).updateScript")
+          script_json=$(nix eval --impure --json --expr "
+            let
+              f = builtins.getFlake \".\";
+              sys = \"x86_64-linux\";
+              lp = f.legacyPackages.${sys};
+              lib = lp.lib;
+              path = lib.splitString \".\" \"${{ matrix.package }}\";
+              pkg = lib.attrByPath path null lp;
+            in
+              if pkg == null then throw \"no pkg\"
+              else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
+              else if (pkg ? updateScript) then pkg.updateScript
+              else throw \"no updateScript\"
+          ")}
           script_type=$(echo "$script_json" | jq -r 'type')
 
           # 函数：处理 nix-update 命令替换并执行
