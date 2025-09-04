@@ -33,7 +33,7 @@ let
     dontInstall = true;
 
     passthru.updateScript = nix-update-script {
-      attrPath = "grub-themes.13atm01-collection.meta";
+      attrPath = "13atm01-themes";
       extraArgs = [
         "--version=branch"
       ];

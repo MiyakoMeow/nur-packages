@@ -64,7 +64,7 @@ stdenv.mkDerivation rec {
 
   passthru = {
     updateScript = nix-update-script {
-      attrPath = "ros2.ros-dev-tools";
+      attrPath = "ros-dev-tools";
       extraArgs = [
         "--version=branch"
       ];
