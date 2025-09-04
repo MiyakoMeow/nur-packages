@@ -55,27 +55,62 @@ let
       # 从根属性集开始收集
       collector { } [ ] attrs;
   };
-
+  # === 处理特殊嵌套包结构 ===
+  # 自动检测 ros2 目录下的包
+  ros2Packages =
+    let
+      ros2Dir = ./pkgs/ros2;
+    in
+    if builtins.pathExists ros2Dir then
+      let
+        ros2Contents = builtins.readDir ros2Dir;
+        packageDirs = lib.filterAttrs (name: type: type == "directory") ros2Contents;
+        packageNames = builtins.attrNames packageDirs;
+        
+        # 为每个包目录创建包
+        packageAttrs = builtins.listToAttrs (
+          map (pkgName: 
+            let
+              pkgDir = ros2Dir + "/${pkgName}";
+              pkgFile = pkgDir + "/package.nix";
+            in
+            if builtins.pathExists pkgFile then
+              { name = pkgName; value = importPackage pkgFile; }
+            else
+              null
+          ) packageNames
+        );
+        
+        # 过滤掉null值
+        validPackages = lib.filterAttrs (name: value: value != null) packageAttrs;
+      in
+      if validPackages != {} then
+        { ros2 = validPackages; }
+      else
+        {}
+    else
+      {};
   # 自动发现所有包目录
   packagesDir = ./pkgs/by-name;
   # 获取所有by-name目录
   byNameDirs = builtins.attrNames (builtins.readDir packagesDir);
-  
+
   # 为每个目录收集所有的.nix文件
   allPackageFiles = lib.concatLists (
-    map (dirName: 
+    map (
+      dirName:
       let
         dirPath = packagesDir + "/${dirName}";
         dirContents = builtins.readDir dirPath;
         nixFiles = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".nix" name) dirContents;
       in
-        map (fileName: {
-          name = fileName;
-          path = dirPath + "/${fileName}";
-        }) (builtins.attrNames nixFiles)
+      map (fileName: {
+        name = fileName;
+        path = dirPath + "/${fileName}";
+      }) (builtins.attrNames nixFiles)
     ) byNameDirs
   );
-  
+
   # 为每个包文件创建包，并展开所有的包
   allOutsidePackages = lib.collectPackages (
     builtins.listToAttrs (
@@ -85,7 +120,6 @@ let
       }) allPackageFiles
     )
   );
-
   # === 处理 pkg-groups 目录 ===
   pkgGroupsDir = ./pkg-groups;
   # 获取所有组名（目录需存在）
@@ -121,5 +155,5 @@ let
     }) groupNames
   );
 in
-specialAttrs // allOutsidePackages // groupedPackages
+specialAttrs // allOutsidePackages // groupedPackages // ros2Packages
 # 按组名组织的包组（每个组是平面属性集）
