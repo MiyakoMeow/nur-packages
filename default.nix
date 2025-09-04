@@ -56,40 +56,58 @@ let
       collector { } [ ] attrs;
   };
   # === 处理特殊嵌套包结构 ===
-  # 自动检测 ros2 目录下的包
-  ros2Packages =
+  # 自动检测所有嵌套包目录（除了by-name）
+  nestedPackages =
     let
-      ros2Dir = ./pkgs/ros2;
+      pkgsDir = ./pkgs;
     in
-    if builtins.pathExists ros2Dir then
+    if builtins.pathExists pkgsDir then
       let
-        ros2Contents = builtins.readDir ros2Dir;
-        packageDirs = lib.filterAttrs (name: type: type == "directory") ros2Contents;
-        packageNames = builtins.attrNames packageDirs;
-        
-        # 为每个包目录创建包
-        packageAttrs = builtins.listToAttrs (
-          map (pkgName: 
-            let
-              pkgDir = ros2Dir + "/${pkgName}";
-              pkgFile = pkgDir + "/package.nix";
-            in
-            if builtins.pathExists pkgFile then
-              { name = pkgName; value = importPackage pkgFile; }
-            else
-              null
-          ) packageNames
-        );
-        
-        # 过滤掉null值
-        validPackages = lib.filterAttrs (name: value: value != null) packageAttrs;
+        allContents = builtins.readDir pkgsDir;
+        # 过滤出目录，排除by-name目录
+        nestedDirs = lib.filterAttrs (name: type: type == "directory" && name != "by-name") allContents;
+        nestedDirNames = builtins.attrNames nestedDirs;
+
+        # 处理每个嵌套目录
+        nestedPackageSets = map (
+          dirName:
+          let
+            dirPath = pkgsDir + "/${dirName}";
+            dirContents = builtins.readDir dirPath;
+            packageDirs = lib.filterAttrs (name: type: type == "directory") dirContents;
+            packageNames = builtins.attrNames packageDirs;
+
+            # 为每个包目录创建包
+            packageAttrs = builtins.listToAttrs (
+              map (
+                pkgName:
+                let
+                  pkgDir = dirPath + "/${pkgName}";
+                  pkgFile = pkgDir + "/package.nix";
+                in
+                if builtins.pathExists pkgFile then
+                  {
+                    name = pkgName;
+                    value = importPackage pkgFile;
+                  }
+                else
+                  null
+              ) packageNames
+            );
+
+            # 过滤掉null值
+            validPackages = lib.filterAttrs (name: value: value != null) packageAttrs;
+          in
+          if validPackages != { } then { ${dirName} = validPackages; } else { }
+        ) nestedDirNames;
+
+        # 合并所有嵌套包集合
+        mergedNestedPackages = lib.foldl' (acc: pkgSet: acc // pkgSet) { } nestedPackageSets;
       in
-      if validPackages != {} then
-        { ros2 = validPackages; }
-      else
-        {}
+      mergedNestedPackages
     else
-      {};
+      { };
+
   # 自动发现所有包目录
   packagesDir = ./pkgs/by-name;
   # 获取所有by-name目录
@@ -120,40 +138,6 @@ let
       }) allPackageFiles
     )
   );
-  # === 处理 pkg-groups 目录 ===
-  pkgGroupsDir = ./pkg-groups;
-  # 获取所有组名（目录需存在）
-  groupNames =
-    if builtins.pathExists pkgGroupsDir then
-      builtins.attrNames (builtins.readDir pkgGroupsDir)
-    else
-      [ ];
-
-  # 导入组内所有包，并收集为平面属性集
-  importGroup =
-    groupName:
-    let
-      groupDir = pkgGroupsDir + "/${groupName}";
-      pkgNames = builtins.attrNames (builtins.readDir groupDir);
-
-      # 创建组内包的原始属性集
-      rawGroup = builtins.listToAttrs (
-        map (pkgName: {
-          name = pkgName;
-          value = importPackage (groupDir + "/${pkgName}");
-        }) pkgNames
-      );
-    in
-    # 关键修改：对每个组应用 collectPackages
-    lib.collectPackages rawGroup;
-
-  # 构建组属性集 { 组名 = 平面包集合; ... }
-  groupedPackages = builtins.listToAttrs (
-    map (groupName: {
-      name = groupName;
-      value = importGroup groupName;
-    }) groupNames
-  );
 in
-specialAttrs // allOutsidePackages // groupedPackages // ros2Packages
+specialAttrs // allOutsidePackages // nestedPackages
 # 按组名组织的包组（每个组是平面属性集）
