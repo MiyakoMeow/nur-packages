@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           # 安装必要工具
-          nix profile add nixpkgs#curl nixpkgs#jq nixpkgs#python3 nixpkgs#nix-update
+          nix profile install nixpkgs#curl nixpkgs#jq nixpkgs#python3 nixpkgs#nix-update
 
       - name: Find packages with updateScript
         id: package-list
@@ -40,10 +40,14 @@ jobs:
         run: |
           # 使用Nix内置方法检测updateScript
           export NIXPKGS_ALLOW_UNFREE=1
-          nix eval --impure --json --expr '
+          # 传入绝对 flake 引用，避免内置 '.' 被拒绝
+          export FLAKE_REF="path:${GITHUB_WORKSPACE:-$PWD}"
+
+          # 递归收集 legacyPackages 下具有 updateScript 的派生（含 groups）
+          nix eval --impure --json --expr "
             let
-              f = builtins.getFlake ".";
-              sys = "x86_64-linux";
+              f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
+              sys = \"x86_64-linux\";
               lp = f.legacyPackages.${sys};
               lib = lp.lib;
               hasUS = pkg: (pkg ? passthru && pkg.passthru ? updateScript) || (pkg ? updateScript);
@@ -51,12 +55,12 @@ jobs:
                 lib.concatMap (name:
                   let v = attrs.${name}; p = path ++ [ name ]; in
                   if lib.isDerivation v then
-                    if hasUS v then [ (lib.concatStringsSep "." p) ] else []
+                    if hasUS v then [ (lib.concatStringsSep \".\" p) ] else []
                   else if lib.isAttrs v then collect v p
                   else []
                 ) (builtins.attrNames attrs);
             in collect lp []
-          ' | jq -r '.[]' > all-packages.txt
+          " | jq -r '.[]' > all-packages.txt
 
           # 创建空包列表文件
           : > package-list.txt
@@ -71,7 +75,7 @@ jobs:
             set +e
             script_output=$(nix eval --impure --json --expr "
               let
-                f = builtins.getFlake \".\";
+                f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
                 sys = \"x86_64-linux\";
                 lp = f.legacyPackages.${sys};
                 lib = lp.lib;
@@ -182,7 +186,7 @@ jobs:
       - name: Install required tools
         run: |
           # 安装通用工具（包括git用于提交）
-          nix profile add nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash
+          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash
 
       - name: Update package
         id: update
@@ -191,6 +195,9 @@ jobs:
           # 设置 Git 用户信息
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
+
+          # 传入绝对 flake 引用，避免内置 '.' 被拒绝
+          export FLAKE_REF="path:${GITHUB_WORKSPACE:-$PWD}"
 
           # 准备执行环境变量（兼容不同脚本类型）
           export NIXPKGS_ALLOW_UNFREE=1
@@ -208,11 +215,10 @@ jobs:
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
 
-          # 获取updateScript并处理不同类型
           echo "获取包 ${{ matrix.package }} 的updateScript"
           script_json=$(nix eval --impure --json --expr "
             let
-              f = builtins.getFlake \".\";
+              f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
               sys = \"x86_64-linux\";
               lp = f.legacyPackages.${sys};
               lib = lp.lib;
@@ -223,10 +229,9 @@ jobs:
               else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
               else if (pkg ? updateScript) then pkg.updateScript
               else throw \"no updateScript\"
-          ")}
+          ")
           script_type=$(echo "$script_json" | jq -r 'type')
 
-          # 函数：处理 nix-update 命令替换并执行
           execute_command_array() {
             local script_array=("$@")
             echo "执行更新命令(数组): ${script_array[@]}"
@@ -234,8 +239,6 @@ jobs:
             # nixpkgs 行为：store 路径的 nix-update 替换为 "nix-update --flake"
             if [[ "${script_array[0]}" =~ ^/nix/store/.*-nix-update.*bin/nix-update$ ]]; then
               echo "检测到 nix-update 路径，使用 nix-update 直接调用"
-
-              # 构建新的命令数组，直接调用 nix-update 并保留其他参数
               local new_command=("nix-update")
               new_command+=("--flake")
               for ((i=1; i<${#script_array[@]}; i++)); do
@@ -248,27 +251,23 @@ jobs:
             fi
           }
 
-          # 根据不同类型执行命令
           case "$script_type" in
             "array")
               mapfile -t script_array < <(echo "$script_json" | jq -r '.[]')
               execute_command_array "${script_array[@]}"
               ;;
             "string")
-              # 字符串类型：作为shell命令执行
               command_str=$(echo "$script_json" | jq -r '.')
               echo "执行更新命令(字符串): $command_str"
               bash -lc "$command_str"
               ;;
             "object")
-              # 属性集类型：提取command字段
               if echo "$script_json" | jq -e 'has("command")' >/dev/null; then
                 command_type=$(echo "$script_json" | jq -r '.command | type')
                 if [ "$command_type" = "array" ]; then
                   mapfile -t script_array < <(echo "$script_json" | jq -r '.command[]')
                   execute_command_array "${script_array[@]}"
                 elif [ "$command_type" = "string" ]; then
-                  # 字符串command：作为shell命令执行
                   command_str=$(echo "$script_json" | jq -r '.command')
                   echo "执行更新命令(属性集-字符串): $command_str"
                   bash -lc "$command_str"
@@ -298,7 +297,6 @@ jobs:
               echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
               echo "更新完成: ${{ matrix.package }}"
           else
-              # 没有检测到更新
               echo "has_update=false" >> $GITHUB_OUTPUT
               echo "没有更新: ${{ matrix.package }}"
           fi
