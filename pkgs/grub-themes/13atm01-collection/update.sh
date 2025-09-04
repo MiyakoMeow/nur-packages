@@ -81,7 +81,7 @@ while IFS= read -r -d $'\0' theme_dir; do
     fi
 
     # 生成包名
-    package_name=$(sanitize_name "$dir_name")"-grub-theme"
+    package_name=$(sanitize_name "$dir_name")""
     theme_path="$dir_name/$inner_dir_name"
 
     # 使用jq更新JSON对象

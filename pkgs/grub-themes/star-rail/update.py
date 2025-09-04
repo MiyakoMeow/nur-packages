@@ -128,7 +128,7 @@ def generate_package_name(asset_name):
     # https://github.com/voidlhf/StarRailGrubThemes?tab=readme-ov-file#without-nixos-module
     base = re.sub(r"\.(tar\.gz|gz)$", "", asset_name, flags=re.IGNORECASE)
     clean = base.lower().replace(".", "_")
-    name = f"star-rail-grub-theme-{clean}"
+    name = f"{clean}"
 
     return name
 
