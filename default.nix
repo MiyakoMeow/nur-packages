@@ -57,16 +57,32 @@ let
   };
 
   # 自动发现所有包目录
-  packagesDir = ./pkgs;
-  packageNames = builtins.attrNames (builtins.readDir packagesDir);
-
-  # 为每个目录创建包或包集合，并展开所有的包
+  packagesDir = ./pkgs/by-name;
+  # 获取所有by-name目录
+  byNameDirs = builtins.attrNames (builtins.readDir packagesDir);
+  
+  # 为每个目录收集所有的.nix文件
+  allPackageFiles = lib.concatLists (
+    map (dirName: 
+      let
+        dirPath = packagesDir + "/${dirName}";
+        dirContents = builtins.readDir dirPath;
+        nixFiles = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".nix" name) dirContents;
+      in
+        map (fileName: {
+          name = fileName;
+          path = dirPath + "/${fileName}";
+        }) (builtins.attrNames nixFiles)
+    ) byNameDirs
+  );
+  
+  # 为每个包文件创建包，并展开所有的包
   allOutsidePackages = lib.collectPackages (
     builtins.listToAttrs (
-      map (name: {
-        name = name;
-        value = importPackage (packagesDir + "/${name}");
-      }) packageNames
+      map (pkgFile: {
+        name = toString pkgFile.path;
+        value = importPackage pkgFile.path;
+      }) allPackageFiles
     )
   );
 
