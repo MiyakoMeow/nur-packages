@@ -53,7 +53,7 @@ jobs:
           while IFS= read -r pkg; do
             # 尝试获取updateScript
             set +e
-            script_output=$(nix eval --impure --json ".#${pkg}.updateScript" 2>/tmp/error.log)
+            script_output=$(nix eval --impure --json --expr "let p=(builtins.getFlake \".\").packages.x86_64-linux; in (builtins.getAttr \"${pkg}\" p).updateScript" 2>/tmp/error.log)
             ret=$?
             set -e
 
@@ -181,7 +181,7 @@ jobs:
 
           # 获取updateScript并处理不同类型
           echo "获取包 ${{ matrix.package }} 的updateScript"
-          script_json=$(nix eval --impure --json ".#${{ matrix.package }}.updateScript")
+          script_json=$(nix eval --impure --json --expr "let p=(builtins.getFlake \".\").packages.x86_64-linux; in (builtins.getAttr \"${{ matrix.package }}\" p).updateScript")
           script_type=$(echo "$script_json" | jq -r 'type')
 
           # 函数：处理 nix-update 命令替换并执行
