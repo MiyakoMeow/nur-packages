@@ -113,19 +113,37 @@ let
   # 获取所有by-name目录
   byNameDirs = builtins.attrNames (builtins.readDir packagesDir);
 
-  # 为每个目录收集所有的.nix文件
+  # 为每个目录收集所有的package.nix文件（递归查找子目录）
   allPackageFiles = lib.concatLists (
     map (
       dirName:
       let
         dirPath = packagesDir + "/${dirName}";
         dirContents = builtins.readDir dirPath;
-        nixFiles = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".nix" name) dirContents;
+        # 获取所有子目录
+        subDirs = lib.filterAttrs (name: type: type == "directory") dirContents;
+        subDirNames = builtins.attrNames subDirs;
+
+        # 为每个子目录查找package.nix
+        packageFiles = map (
+          subDirName:
+          let
+            subDirPath = dirPath + "/${subDirName}";
+            packageFile = subDirPath + "/package.nix";
+          in
+          if builtins.pathExists packageFile then
+            {
+              name = subDirName;
+              path = packageFile;
+            }
+          else
+            null
+        ) subDirNames;
+
+        # 过滤掉null值
+        validPackageFiles = lib.filter (file: file != null) packageFiles;
       in
-      map (fileName: {
-        name = fileName;
-        path = dirPath + "/${fileName}";
-      }) (builtins.attrNames nixFiles)
+      validPackageFiles
     ) byNameDirs
   );
 
