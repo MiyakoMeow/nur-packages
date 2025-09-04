@@ -51,7 +51,14 @@ let
   # 创建所有主题包集合
   theme-packages = lib.mapAttrs mkThemePackage theme-info;
 in
-{
-  # 新变量，暴露所有主题包
-  packagesInSet = theme-packages;
+# 直接暴露所有主题包，使其可以直接通过 grub-themes.star-rail.acheron 访问
+theme-packages
+// {
+  # 保留集合的元信息
+  meta = with lib; {
+    description = "Honkai: Star Rail GRUB themes collection";
+    homepage = "https://github.com/voidlhf/StarRailGrubThemes";
+    license = licenses.gpl3;
+    platforms = platforms.all;
+  };
 }

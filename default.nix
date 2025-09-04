@@ -74,31 +74,53 @@ let
           let
             dirPath = pkgsDir + "/${dirName}";
             dirContents = builtins.readDir dirPath;
-            packageDirs = lib.filterAttrs (name: type: type == "directory") dirContents;
+
+            # 首先检查是否有直接的package.nix或default.nix
+            directPackageFile = dirPath + "/package.nix";
+            directDefaultFile = dirPath + "/default.nix";
+
+            # 检查子目录中的包
+            packageDirs = lib.filterAttrs (
+              name: type:
+              type == "directory"
+              && (
+                builtins.pathExists (dirPath + "/${name}/package.nix")
+                || builtins.pathExists (dirPath + "/${name}/default.nix")
+              )
+            ) dirContents;
             packageNames = builtins.attrNames packageDirs;
 
-            # 为每个包目录创建包
-            packageAttrs = builtins.listToAttrs (
+            # 为每个子目录包创建包
+            subPackages = builtins.listToAttrs (
               map (
                 pkgName:
                 let
-                  pkgDir = dirPath + "/${pkgName}";
-                  pkgFile = pkgDir + "/package.nix";
+                  pkgFile = dirPath + "/${pkgName}/package.nix";
+                  defaultFile = dirPath + "/${pkgName}/default.nix";
+                  file = if builtins.pathExists pkgFile then pkgFile else defaultFile;
                 in
-                if builtins.pathExists pkgFile then
-                  {
-                    name = pkgName;
-                    value = importPackage pkgFile;
-                  }
-                else
-                  null
+                {
+                  name = pkgName;
+                  value = importPackage file;
+                }
               ) packageNames
             );
 
-            # 过滤掉null值
-            validPackages = lib.filterAttrs (name: value: value != null) packageAttrs;
+            # 如果有直接包，使用直接包；否则使用子目录包
+            finalPackages =
+              if builtins.pathExists directPackageFile || builtins.pathExists directDefaultFile then
+                let
+                  file = if builtins.pathExists directPackageFile then directPackageFile else directDefaultFile;
+                in
+                {
+                  ${dirName} = importPackage file;
+                }
+              else if subPackages != { } then
+                subPackages
+              else
+                { };
           in
-          if validPackages != { } then { ${dirName} = validPackages; } else { }
+          if finalPackages != { } then { ${dirName} = finalPackages; } else { }
         ) nestedDirNames;
 
         # 合并所有嵌套包集合

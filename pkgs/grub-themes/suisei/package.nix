@@ -5,7 +5,7 @@
   nix-update-script,
 }:
 stdenvNoCC.mkDerivation rec {
-  pname = "suisei-grub-theme";
+  pname = "suisei";
   version = "0-unstable-2024-11-01";
 
   src = fetchFromGitHub {
@@ -28,7 +28,7 @@ stdenvNoCC.mkDerivation rec {
 
   passthru = {
     updateScript = nix-update-script {
-      attrPath = "suisei-grub-theme";
+      attrPath = "grub-themes.suisei";
       extraArgs = [
         "--version=branch"
       ];

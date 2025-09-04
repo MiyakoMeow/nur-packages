@@ -24,7 +24,7 @@ let
   };
 
   metaPkg = stdenvNoCC.mkDerivation rec {
-    pname = "13atm01-grub-themes-meta";
+    pname = "13atm01-themes";
     inherit src version;
 
     dontUnpack = true;
@@ -33,7 +33,7 @@ let
     dontInstall = true;
 
     passthru.updateScript = nix-update-script {
-      attrPath = pname;
+      attrPath = "grub-themes.13atm01-collection.meta";
       extraArgs = [
         "--version=branch"
       ];
