@@ -79,9 +79,10 @@ jobs:
                 f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
                 sys = \"x86_64-linux\";
                 lp = builtins.getAttr sys f.legacyPackages;
-                lib = lp.lib;
-                path = lib.splitString \".\" \"${pkg}\";
-                pkg = lib.attrByPath path null lp;
+                pkgsN = import <nixpkgs> {};
+                lib = pkgsN.lib;
+                path = lib.strings.splitString \".\" \"${pkg}\";
+                pkg = lib.attrsets.attrByPath path null lp;
               in
                 if pkg == null then throw \"no pkg\"
                 else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
@@ -222,9 +223,10 @@ jobs:
               f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
               sys = \"x86_64-linux\";
               lp = builtins.getAttr sys f.legacyPackages;
-              lib = lp.lib;
-              path = lib.splitString \".\" \"${{ matrix.package }}\";
-              pkg = lib.attrByPath path null lp;
+              pkgsN = import <nixpkgs> {};
+              lib = pkgsN.lib;
+              path = lib.strings.splitString \".\" \"${{ matrix.package }}\";
+              pkg = lib.attrsets.attrByPath path null lp;
             in
               if pkg == null then throw \"no pkg\"
               else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
