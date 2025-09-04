@@ -44,6 +44,13 @@ def calculate_sha256_nix(url: str):
         raise
 
 
+def extract_sha256_from_digest(digest: str):
+    """从GitHub API的digest字段中提取SHA256哈希"""
+    if digest and digest.startswith("sha256:"):
+        return digest[7:]  # 移除 "sha256:" 前缀
+    return None
+
+
 def calculate_sha256_request(url: str):
     """计算远程文件的 SHA256 哈希值"""
     try:
@@ -109,6 +116,7 @@ def get_release_assets(owner, repo, tag=None):
                             "name": asset["name"],
                             "url": asset["browser_download_url"],
                             "release_tag": release["tag_name"],
+                            "digest": asset.get("digest", ""),
                         }
                     )
 
@@ -157,8 +165,14 @@ def main():
         pname = generate_package_name(asset["name"])
         logger.info(f"Processing: {pname}")
 
-        sha256 = calculate_sha256_request(asset["url"])
+        # 优先使用API提供的SHA256，如果没有则下载计算
+        sha256 = extract_sha256_from_digest(asset.get("digest", ""))
         if not sha256:
+            logger.info(f"SHA256 not found in API for {pname}, falling back to download")
+            sha256 = calculate_sha256_request(asset["url"])
+        
+        if not sha256:
+            logger.warning(f"Failed to get SHA256 for {pname}, skipping")
             continue
 
         theme_info[pname] = {
@@ -166,8 +180,6 @@ def main():
             "sha256": sha256,
             "tag": asset.get("release_tag"),
         }
-        # Debug
-        print(theme_info)
 
     # 保存到文件
     with open(args.output, "w") as f:
