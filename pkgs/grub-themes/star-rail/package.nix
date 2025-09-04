@@ -40,6 +40,21 @@ let
         fi
       '';
 
+      passthru = {
+        # 组感知的更新脚本：任一主题触发均更新整个集合
+        updateScript = {
+          group = "grub-themes.star-rail";
+          command = [
+            "nix-shell"
+            "-p"
+            "python3"
+            "python3Packages.requests"
+            "--run"
+            "python3 pkgs/grub-themes/star-rail/update.py"
+          ];
+        };
+      };
+
       meta = with lib; {
         description = "Honkai: Star Rail GRUB theme (${pname})";
         homepage = "https://github.com/voidlhf/StarRailGrubThemes";

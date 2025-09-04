@@ -4,6 +4,10 @@ on:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
   workflow_dispatch: # 允许手动触发
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -39,9 +43,10 @@ jobs:
           nix eval --impure --json .#packages.x86_64-linux --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
 
           # 创建空包列表文件
-          echo "" > package-list.txt
+          : > package-list.txt
 
-          # 声明关联数组用于命令去重
+          # 用于去重：优先基于 group；缺省回退到 command 指纹
+          declare -A unique_groups
           declare -A unique_commands
 
           # 过滤出有updateScript的包，并进行命令去重
@@ -58,6 +63,7 @@ jobs:
 
             # 检查输出类型并标准化为命令数组
             script_type=$(echo "$script_output" | jq -r 'type')
+            group_name=""
             command_fingerprint=""
 
             case "$script_type" in
@@ -70,7 +76,10 @@ jobs:
                 command_fingerprint=$(echo "$script_output" | jq -c '[.] | sort')
                 ;;
               "object")
-                # 属性集类型：检查是否有command字段
+                # 读取 group；与 nixpkgs 一致：存在则优先按组去重
+                if echo "$script_output" | jq -e 'has("group")' >/dev/null; then
+                  group_name=$(echo "$script_output" | jq -r '.group')
+                fi
                 if echo "$script_output" | jq -e 'has("command")' >/dev/null; then
                   command_type=$(echo "$script_output" | jq -r '.command | type')
                   if [ "$command_type" = "array" ]; then
@@ -84,24 +93,32 @@ jobs:
                 ;;
             esac
 
-            # 跳过无法识别的格式
-            if [ -z "$command_fingerprint" ]; then
+            # 既无 group 也无可识别 command 时跳过
+            if [ -z "$group_name" ] && [ -z "$command_fingerprint" ]; then
               echo "跳过包 $pkg (不支持的updateScript格式: $script_type)"
               continue
             fi
 
-            # 检查命令是否已存在
-            if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
-              # 新命令，记录到列表
-              unique_commands["$command_fingerprint"]=1
-              echo "$pkg" >> package-list.txt
+            if [ -n "$group_name" ]; then
+              # 基于 group 去重，同组只执行一次
+              if [[ -z "${unique_groups[$group_name]}" ]]; then
+                unique_groups["$group_name"]=1
+                echo "$pkg" >> package-list.txt
+              else
+                echo "跳过包 $pkg (同组已收录: $group_name)"
+              fi
             else
-              echo "跳过包 $pkg (重复命令: ${command_fingerprint})"
+              # 基于 command 指纹去重
+              if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
+                unique_commands["$command_fingerprint"]=1
+                echo "$pkg" >> package-list.txt
+              else
+                echo "跳过包 $pkg (重复命令: ${command_fingerprint})"
+              fi
             fi
           done < all-packages.txt
 
-          # 输出包列表和数量
-          echo "找到 $(wc -l < package-list.txt) 个需要更新的包:"
+          echo "找到 $(wc -l < package-list.txt) 个需要更新的条目:"
           cat package-list.txt
 
           # 设置输出变量
@@ -153,12 +170,12 @@ jobs:
 
           echo "NIX_PATH=$NIX_PATH"
 
-          # 创建唯一分支名
+          # 创建唯一分支名（可根据 group 优化命名，但此处保持兼容）
           timestamp=$(date +%s)
           branch_name="update/${{ matrix.package }}-$timestamp"
           echo "分支名称: $branch_name"
 
-          # 使用临时HOME目录解决权限问题
+          # 使用临时HOME目录以防脚本写入HOME
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
 
@@ -172,7 +189,7 @@ jobs:
             local script_array=("$@")
             echo "执行更新命令(数组): ${script_array[@]}"
 
-            # 检查是否需要替换 nix-update 命令
+            # nixpkgs 行为：store 路径的 nix-update 替换为 "nix-update --flake"
             if [[ "${script_array[0]}" =~ ^/nix/store/.*-nix-update.*bin/nix-update$ ]]; then
               echo "检测到 nix-update 路径，使用 nix-update 直接调用"
 
@@ -192,29 +209,27 @@ jobs:
           # 根据不同类型执行命令
           case "$script_type" in
             "array")
-              # 数组类型：直接执行
-              script_array=($(echo "$script_json" | jq -r '.[]'))
+              mapfile -t script_array < <(echo "$script_json" | jq -r '.[]')
               execute_command_array "${script_array[@]}"
               ;;
             "string")
               # 字符串类型：作为shell命令执行
               command_str=$(echo "$script_json" | jq -r '.')
               echo "执行更新命令(字符串): $command_str"
-              bash -c "$command_str"
+              bash -lc "$command_str"
               ;;
             "object")
               # 属性集类型：提取command字段
               if echo "$script_json" | jq -e 'has("command")' >/dev/null; then
                 command_type=$(echo "$script_json" | jq -r '.command | type')
                 if [ "$command_type" = "array" ]; then
-                  # 数组command：直接执行
-                  script_array=($(echo "$script_json" | jq -r '.command[]'))
+                  mapfile -t script_array < <(echo "$script_json" | jq -r '.command[]')
                   execute_command_array "${script_array[@]}"
                 elif [ "$command_type" = "string" ]; then
                   # 字符串command：作为shell命令执行
                   command_str=$(echo "$script_json" | jq -r '.command')
                   echo "执行更新命令(属性集-字符串): $command_str"
-                  bash -c "$command_str"
+                  bash -lc "$command_str"
                 else
                   echo "错误：不支持的command类型: $command_type"
                   exit 1
@@ -235,13 +250,8 @@ jobs:
           export HOME="$ORI_HOME"
           rm -rf "$TEMP_HOME"
 
-          # 检查是否有需要提交的更改
+          # 检查是否有需要提交的更改（不在此处提交，交由后续PR步骤）
           if [ -n "$(git status --porcelain)" ]; then
-              # 检测到更新，进行提交
-              git add *
-              git commit -m "updateScript: ${{ matrix.package }}"
-              
-              # 设置输出变量
               echo "has_update=true" >> $GITHUB_OUTPUT
               echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
               echo "更新完成: ${{ matrix.package }}"

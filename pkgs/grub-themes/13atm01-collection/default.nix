@@ -75,8 +75,21 @@ let
         fi
       '';
 
-      # Self updateScript
-      passthru.updateScript = [ ./update.sh ];
+      # Self updateScript -> 组感知 + nix-shell 依赖
+      passthru.updateScript = {
+        group = "grub-themes.13atm01-collection";
+        command = [
+          "nix-shell"
+          "-p"
+          "bash"
+          "jq"
+          "coreutils"
+          "gnused"
+          "git"
+          "--run"
+          "bash pkgs/grub-themes/13atm01-collection/update.sh"
+        ];
+      };
 
       meta = with lib; {
         description = "GRUB2 theme '${packageName}' from ${owner}/${repo}";
