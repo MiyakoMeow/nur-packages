@@ -40,6 +40,7 @@ let
         "-p"
         "python3"
         "python3Packages.requests"
+        "nix-update"
         "git"
         "--run"
         "python3 pkgs/grub-themes/13atm01-collection/update.py"

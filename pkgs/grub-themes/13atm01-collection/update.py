@@ -6,6 +6,11 @@ Generate theme-list.json for 13atm01 GRUB themes collection.
 - For each discovered theme, compute a package name by sanitizing the parent directory name
   (lowercase, non-alphanumeric -> '-', collapse repeats, trim '-') and map it to a relative
   path from the repo root to the directory containing theme.txt.
+
+Additionally: after updating theme-list.json, call nix-update to update the src
+(commit and hash) for this collection package. The attribute path is expected to be
+"grub-themes.13atm01-collection.meta" or "grub-themes.13atm01-collection" depending on
+how the flake exposes it; we attempt meta first then fallback.
 """
 
 import argparse
@@ -73,13 +78,42 @@ def write_json(output_path: Path, mapping: dict) -> None:
         json.dump(mapping, f, indent=2, sort_keys=True, ensure_ascii=False)
 
 
+def try_run(cmd: list[str]) -> tuple[bool, str]:
+    try:
+        log("执行: " + " ".join(cmd))
+        subprocess.run(cmd, check=True)
+        return True, ""
+    except subprocess.CalledProcessError as e:
+        return False, str(e)
+
+
+def run_nix_update(attr_paths: list[str]) -> None:
+    env = os.environ.copy()
+    # Ensure flake mode
+    args_common = ["nix-update", "--flake"]
+    last_err = None
+    for attr in attr_paths:
+        ok, err = try_run(args_common + [attr])
+        if ok:
+            log(f"nix-update 成功: {attr}")
+            return
+        last_err = err
+        log(f"nix-update 失败: {attr}: {err}")
+    raise SystemExit(f"nix-update 全部尝试失败: {attr_paths}. 最后错误: {last_err}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate 13atm01 GRUB theme list JSON"
+        description="Generate 13atm01 GRUB theme list JSON and update src via nix-update"
     )
     parser.add_argument(
         "--repo-path",
         help="Path to an existing GRUB-Theme repository (skips cloning)",
+    )
+    parser.add_argument(
+        "--skip-nix-update",
+        action="store_true",
+        help="Only refresh theme-list.json without running nix-update",
     )
     args = parser.parse_args()
 
@@ -110,6 +144,18 @@ def main() -> int:
 
         write_json(output_file, themes)
         log(f"成功生成 {len(themes)} 个主题到 {output_file}")
+
+        if not args.skip_nix_update:
+            # Prefer updating the meta derivation which carries the src
+            # Attribute paths to try in order
+            attr_candidates = [
+                "grub-themes.13atm01-collection.meta",
+                "grub-themes.13atm01-collection",
+            ]
+            run_nix_update(attr_candidates)
+        else:
+            log("跳过 nix-update 根据参数 --skip-nix-update")
+
         return 0
     finally:
         if temp_dir is not None:
