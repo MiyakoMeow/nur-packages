@@ -11,7 +11,7 @@
 }:
 stdenv.mkDerivation rec {
   pname = "ros-dev-tools";
-  version = "0-unstable-2023-09-05";
+  version = "0-unstable-2025-03-13";
 
   src = fetchFromGitHub {
     owner = "DSPEngineer";
