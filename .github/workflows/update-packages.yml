@@ -1,4 +1,4 @@
-name: Auto Update Packages via updateScript
+name: Update Packages via "updateScript"
 on:
   schedule:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
