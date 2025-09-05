@@ -22,95 +22,100 @@ UPSTREAM_REPO = "https://github.com/13atm01/GRUB-Theme.git"
 
 
 def log(msg: str) -> None:
-  print(msg, file=sys.stderr)
+    print(msg, file=sys.stderr)
 
 
 def sanitize_name(name: str) -> str:
-  name = name.lower()
-  name = re.sub(r"[^a-z0-9]", "-", name)
-  name = re.sub(r"-+", "-", name)
-  name = name.strip("-")
-  return name
+    name = name.lower()
+    name = re.sub(r"[^a-z0-9]", "-", name)
+    name = re.sub(r"-+", "-", name)
+    name = name.strip("-")
+    return name
 
 
 def clone_repo(temp_dir: Path) -> Path:
-  log("未提供仓库路径，将临时克隆仓库...")
-  dest = temp_dir / "repo"
-  subprocess.run([
-    "git",
-    "clone",
-    "--depth",
-    "1",
-    UPSTREAM_REPO,
-    str(dest),
-  ], check=True)
-  log(f"临时克隆完成: {dest}")
-  return dest
+    log("未提供仓库路径，将临时克隆仓库...")
+    dest = temp_dir / "repo"
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            UPSTREAM_REPO,
+            str(dest),
+        ],
+        check=True,
+    )
+    log(f"临时克隆完成: {dest}")
+    return dest
 
 
 def find_themes(repo_root: Path) -> dict:
-  themes = {}
-  # Walk and find files named 'theme.txt'
-  for root, dirs, files in os.walk(repo_root):
-    if "theme.txt" in files:
-      theme_dir = Path(root)
-      rel_path = theme_dir.relative_to(repo_root).as_posix()
+    themes = {}
+    # Walk and find files named 'theme.txt'
+    for root, dirs, files in os.walk(repo_root):
+        if "theme.txt" in files:
+            theme_dir = Path(root)
+            rel_path = theme_dir.relative_to(repo_root).as_posix()
 
-      parent_dir = theme_dir.parent
-      dir_name = parent_dir.name  # package name is based on parent directory
+            parent_dir = theme_dir.parent
+            dir_name = parent_dir.name  # package name is based on parent directory
 
-      package_name = sanitize_name(dir_name)
-      themes[package_name] = rel_path
-  return themes
+            package_name = sanitize_name(dir_name)
+            themes[package_name] = rel_path
+    return themes
 
 
 def write_json(output_path: Path, mapping: dict) -> None:
-  # Sort keys for stable output
-  with output_path.open("w", encoding="utf-8") as f:
-    json.dump(mapping, f, indent=2, sort_keys=True, ensure_ascii=False)
+    # Sort keys for stable output
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(mapping, f, indent=2, sort_keys=True, ensure_ascii=False)
 
 
 def main() -> int:
-  parser = argparse.ArgumentParser(description="Generate 13atm01 GRUB theme list JSON")
-  parser.add_argument(
-    "--repo-path",
-    help="Path to an existing GRUB-Theme repository (skips cloning)",
-  )
-  args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="Generate 13atm01 GRUB theme list JSON"
+    )
+    parser.add_argument(
+        "--repo-path",
+        help="Path to an existing GRUB-Theme repository (skips cloning)",
+    )
+    args = parser.parse_args()
 
-  script_dir = Path(__file__).resolve().parent
-  output_file = script_dir / "theme-list.json"
+    script_dir = Path(__file__).resolve().parent
+    output_file = script_dir / "theme-list.json"
 
-  log("正在更新GRUB主题列表...")
-  log(f"输出位置: {output_file}")
+    log("正在更新GRUB主题列表...")
+    log(f"输出位置: {output_file}")
 
-  temp_dir: tempfile.TemporaryDirectory | None = None
-  try:
-    if args.repo_path:
-      repo_root = Path(args.repo_path).resolve()
-      if not repo_root.is_dir():
-        log(f"错误: 提供的仓库路径不存在或不是目录: {repo_root}")
-        return 1
-      log(f"使用外部仓库路径: {repo_root}")
-    else:
-      temp_dir = tempfile.TemporaryDirectory()
-      repo_root = clone_repo(Path(temp_dir.name))
+    temp_dir: tempfile.TemporaryDirectory | None = None
+    try:
+        if args.repo_path:
+            repo_root = Path(args.repo_path).resolve()
+            if not repo_root.is_dir():
+                log(f"错误: 提供的仓库路径不存在或不是目录: {repo_root}")
+                return 1
+            log(f"使用外部仓库路径: {repo_root}")
+        else:
+            temp_dir = tempfile.TemporaryDirectory()
+            repo_root = clone_repo(Path(temp_dir.name))
 
-    themes = find_themes(repo_root)
+        themes = find_themes(repo_root)
 
-    if not themes:
-      # Write empty object for determinism then fail like the shell script
-      write_json(output_file, {})
-      return 1
+        if not themes:
+            # Write empty object for determinism then fail like the shell script
+            write_json(output_file, {})
+            return 1
 
-    write_json(output_file, themes)
-    log(f"成功生成 {len(themes)} 个主题到 {output_file}")
-    return 0
-  finally:
-    if temp_dir is not None:
-      # Ensure cleanup
-      temp_dir.cleanup()
+        write_json(output_file, themes)
+        log(f"成功生成 {len(themes)} 个主题到 {output_file}")
+        return 0
+    finally:
+        if temp_dir is not None:
+            # Ensure cleanup
+            temp_dir.cleanup()
 
 
 if __name__ == "__main__":
-  sys.exit(main()) 
+    sys.exit(main())
