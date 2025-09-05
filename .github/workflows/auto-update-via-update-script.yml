@@ -194,7 +194,7 @@ jobs:
       - name: Install required tools
         run: |
           # 安装通用工具（包括git用于提交）
-          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash
+          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash nixpkgs#gh
 
       - name: Update package
         id: update
@@ -359,34 +359,18 @@ jobs:
           echo "pr_data={\"number\": \"${{ steps.create-pull-request.outputs.pull-request-number }}\", \"package\": \"${{ matrix.package }}\"}" >> $GITHUB_OUTPUT
         id: collect-pr
 
-  wait-for-ci:
-    needs: update-package
-    if: needs.update-package.outputs.has_update == 'true'
-    runs-on: ubuntu-latest
-    steps:
       - name: Wait for CI completion
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
-          # 解析PR数据
-          PR_DATA='${{ needs.update-package.outputs.pr_data }}'
-          if [ -z "$PR_DATA" ] || [ "$PR_DATA" = "null" ]; then
-            echo "没有PR数据，跳过等待"
-            exit 0
-          fi
-          
-          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
-          PACKAGE=$(echo "$PR_DATA" | jq -r '.package')
-          
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "无效的PR编号"
-            exit 1
-          fi
-          
+          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
+          PACKAGE='${{ matrix.package }}'
+
           echo "等待PR #$PR_NUMBER ($PACKAGE) 的CI完成"
-          
+
           # 等待CI完成
           MAX_WAIT=1800  # 30分钟超时
           WAIT_TIME=0
-          
+
           while [ $WAIT_TIME -lt $MAX_WAIT ]; do
             # 获取PR的提交SHA
             HEAD_SHA=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '.head.sha')
@@ -426,21 +410,12 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Enable Pull Request Automerge
-        if: ${{ success() }}
+        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
-          # 解析PR数据
-          PR_DATA='${{ needs.update-package.outputs.pr_data }}'
-          if [ -z "$PR_DATA" ] || [ "$PR_DATA" = "null" ]; then
-            echo "没有PR数据，跳过自动合并"
-            exit 0
-          fi
-          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
-          PACKAGE=$(echo "$PR_DATA" | jq -r '.package')
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "无效的PR编号，跳过自动合并"
-            exit 0
-          fi
+          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
+          PACKAGE='${{ matrix.package }}'
           echo "启用PR #$PR_NUMBER ($PACKAGE) 的自动合并"
           gh pr merge "$PR_NUMBER" --auto --merge
         env:
