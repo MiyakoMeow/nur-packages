@@ -38,13 +38,11 @@ let
       command = [
         "nix-shell"
         "-p"
-        "bash"
-        "jq"
-        "coreutils"
-        "gnused"
+        "python3"
+        "python3Packages.requests"
         "git"
         "--run"
-        "bash pkgs/grub-themes/13atm01-collection/update.sh"
+        "python3 pkgs/grub-themes/13atm01-collection/update.py"
       ];
     };
     meta = with lib; {
