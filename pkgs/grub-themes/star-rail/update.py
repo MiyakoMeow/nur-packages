@@ -168,9 +168,11 @@ def main():
         # 优先使用API提供的SHA256，如果没有则下载计算
         sha256 = extract_sha256_from_digest(asset.get("digest", ""))
         if not sha256:
-            logger.info(f"SHA256 not found in API for {pname}, falling back to download")
+            logger.info(
+                f"SHA256 not found in API for {pname}, falling back to download"
+            )
             sha256 = calculate_sha256_request(asset["url"])
-        
+
         if not sha256:
             logger.warning(f"Failed to get SHA256 for {pname}, skipping")
             continue

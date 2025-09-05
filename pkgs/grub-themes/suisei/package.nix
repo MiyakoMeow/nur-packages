@@ -28,7 +28,7 @@ stdenvNoCC.mkDerivation rec {
 
   passthru = {
     updateScript = nix-update-script {
-      attrPath = "grub-themes.suisei";
+      attrPath = "suisei";
       extraArgs = [
         "--version=branch"
       ];

@@ -4,6 +4,10 @@ on:
     - cron: "0 12 * * *" # 每天 UTC 中午12点运行
   workflow_dispatch: # 允许手动触发
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -28,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           # 安装必要工具
-          nix profile add nixpkgs#curl nixpkgs#jq nixpkgs#python3 nixpkgs#nix-update
+          nix profile install nixpkgs#curl nixpkgs#jq nixpkgs#python3 nixpkgs#nix-update
 
       - name: Find packages with updateScript
         id: package-list
@@ -36,19 +40,55 @@ jobs:
         run: |
           # 使用Nix内置方法检测updateScript
           export NIXPKGS_ALLOW_UNFREE=1
-          nix eval --impure --json .#packages.x86_64-linux --apply 'builtins.attrNames' | jq -r '.[]' > all-packages.txt
+          # 传入绝对 flake 引用，避免内置 '.' 被拒绝
+          export FLAKE_REF="path:${GITHUB_WORKSPACE:-$PWD}"
+
+          # 递归收集 legacyPackages 下具有 updateScript 的派生（含 groups）
+          nix eval --impure --json --expr "
+            let
+              f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
+              sys = \"x86_64-linux\";
+              lp = builtins.getAttr sys f.legacyPackages;
+              pkgsN = import <nixpkgs> {};
+              lib = pkgsN.lib;
+              hasUS = pkg: (pkg ? passthru && pkg.passthru ? updateScript) || (pkg ? updateScript);
+              collect = attrs: path:
+                lib.concatMap (name:
+                  let v = attrs.\${name}; p = path ++ [ name ]; in
+                  if lib.isDerivation v then
+                    if hasUS v then [ (lib.concatStringsSep \".\" p) ] else []
+                  else if lib.isAttrs v then collect v p
+                  else []
+                ) (builtins.attrNames attrs);
+            in collect lp []
+          " | jq -r '.[]' > all-packages.txt
 
           # 创建空包列表文件
-          echo "" > package-list.txt
+          : > package-list.txt
 
-          # 声明关联数组用于命令去重
+          # 用于去重：优先基于 group；缺省回退到 command 指纹
+          declare -A unique_groups
           declare -A unique_commands
 
           # 过滤出有updateScript的包，并进行命令去重
           while IFS= read -r pkg; do
             # 尝试获取updateScript
             set +e
-            script_output=$(nix eval --impure --json ".#${pkg}.updateScript" 2>/tmp/error.log)
+            script_output=$(nix eval --impure --json --expr "
+              let
+                f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
+                sys = \"x86_64-linux\";
+                lp = builtins.getAttr sys f.legacyPackages;
+                pkgsN = import <nixpkgs> {};
+                lib = pkgsN.lib;
+                path = lib.strings.splitString \".\" \"${pkg}\";
+                pkg = lib.attrsets.attrByPath path null lp;
+              in
+                if pkg == null then throw \"no pkg\"
+                else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
+                else if (pkg ? updateScript) then pkg.updateScript
+                else throw \"no updateScript\"
+            " 2>/tmp/error.log)
             ret=$?
             set -e
 
@@ -58,6 +98,7 @@ jobs:
 
             # 检查输出类型并标准化为命令数组
             script_type=$(echo "$script_output" | jq -r 'type')
+            group_name=""
             command_fingerprint=""
 
             case "$script_type" in
@@ -70,7 +111,16 @@ jobs:
                 command_fingerprint=$(echo "$script_output" | jq -c '[.] | sort')
                 ;;
               "object")
-                # 属性集类型：检查是否有command字段
+                # 读取 group；与 nixpkgs 一致：存在则优先按组去重
+                if echo "$script_output" | jq -e 'has("group")' >/dev/null; then
+                  group_name=$(echo "$script_output" | jq -r '.group')
+                fi
+                # 当未提供 group 时，回退为属性路径的上级前缀（去掉最后一段）
+                if [ -z "$group_name" ]; then
+                  if [[ "$pkg" == *.* ]]; then
+                    group_name=${pkg%.*}
+                  fi
+                fi
                 if echo "$script_output" | jq -e 'has("command")' >/dev/null; then
                   command_type=$(echo "$script_output" | jq -r '.command | type')
                   if [ "$command_type" = "array" ]; then
@@ -84,24 +134,32 @@ jobs:
                 ;;
             esac
 
-            # 跳过无法识别的格式
-            if [ -z "$command_fingerprint" ]; then
+            # 既无 group 也无可识别 command 时跳过
+            if [ -z "$group_name" ] && [ -z "$command_fingerprint" ]; then
               echo "跳过包 $pkg (不支持的updateScript格式: $script_type)"
               continue
             fi
 
-            # 检查命令是否已存在
-            if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
-              # 新命令，记录到列表
-              unique_commands["$command_fingerprint"]=1
-              echo "$pkg" >> package-list.txt
+            if [ -n "$group_name" ]; then
+              # 基于 group 去重，同组只执行一次
+              if [[ -z "${unique_groups[$group_name]}" ]]; then
+                unique_groups["$group_name"]=1
+                echo "$pkg" >> package-list.txt
+              else
+                echo "跳过包 $pkg (同组已收录: $group_name)"
+              fi
             else
-              echo "跳过包 $pkg (重复命令: ${command_fingerprint})"
+              # 基于 command 指纹去重
+              if [[ -z "${unique_commands[$command_fingerprint]}" ]]; then
+                unique_commands["$command_fingerprint"]=1
+                echo "$pkg" >> package-list.txt
+              else
+                echo "跳过包 $pkg (重复命令: ${command_fingerprint})"
+              fi
             fi
           done < all-packages.txt
 
-          # 输出包列表和数量
-          echo "找到 $(wc -l < package-list.txt) 个需要更新的包:"
+          echo "找到 $(wc -l < package-list.txt) 个需要更新的条目:"
           cat package-list.txt
 
           # 设置输出变量
@@ -136,7 +194,7 @@ jobs:
       - name: Install required tools
         run: |
           # 安装通用工具（包括git用于提交）
-          nix profile add nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash
+          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash
 
       - name: Update package
         id: update
@@ -146,6 +204,9 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
+          # 传入绝对 flake 引用，避免内置 '.' 被拒绝
+          export FLAKE_REF="path:${GITHUB_WORKSPACE:-$PWD}"
+
           # 准备执行环境变量（兼容不同脚本类型）
           export NIXPKGS_ALLOW_UNFREE=1
           export NIXPKGS_ALLOW_BROKEN=1
@@ -153,68 +214,95 @@ jobs:
 
           echo "NIX_PATH=$NIX_PATH"
 
-          # 创建唯一分支名
+          # 创建唯一分支名（可根据 group 优化命名，但此处保持兼容）
           timestamp=$(date +%s)
           branch_name="update/${{ matrix.package }}-$timestamp"
           echo "分支名称: $branch_name"
 
-          # 使用临时HOME目录解决权限问题
+          # 使用临时HOME目录以防脚本写入HOME
           export ORI_HOME="$HOME"
           export HOME=$(mktemp -d)
 
-          # 获取updateScript并处理不同类型
           echo "获取包 ${{ matrix.package }} 的updateScript"
-          script_json=$(nix eval --impure --json ".#${{ matrix.package }}.updateScript")
+          script_json=$(nix eval --impure --json --expr "
+            let
+              f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
+              sys = \"x86_64-linux\";
+              lp = builtins.getAttr sys f.legacyPackages;
+              pkgsN = import <nixpkgs> {};
+              lib = pkgsN.lib;
+              path = lib.strings.splitString \".\" \"${{ matrix.package }}\";
+              pkg = lib.attrsets.attrByPath path null lp;
+            in
+              if pkg == null then throw \"no pkg\"
+              else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
+              else if (pkg ? updateScript) then pkg.updateScript
+              else throw \"no updateScript\"
+          ")
           script_type=$(echo "$script_json" | jq -r 'type')
 
-          # 函数：处理 nix-update 命令替换并执行
+          # 将命令数组重写为使用完整属性路径的 nix-update，并保留标志参数
           execute_command_array() {
             local script_array=("$@")
-            echo "执行更新命令(数组): ${script_array[@]}"
+            local cmd="${script_array[0]}"
 
-            # 检查是否需要替换 nix-update 命令
-            if [[ "${script_array[0]}" =~ ^/nix/store/.*-nix-update.*bin/nix-update$ ]]; then
-              echo "检测到 nix-update 路径，使用 nix-update 直接调用"
+            # 将 store 路径的 nix-update 规范化为 "nix-update"
+            if [[ "$cmd" =~ ^/nix/store/.*/bin/nix-update$ ]]; then
+              cmd="nix-update"
+              script_array[0]="nix-update"
+            fi
 
-              # 构建新的命令数组，直接调用 nix-update 并保留其他参数
+            if [[ "$cmd" == "nix-update" ]]; then
               local new_command=("nix-update")
-              new_command+=("--flake")
+              local has_flake=0
+
+              # 保留所有以 - 开头或包含 = 的标志参数；丢弃位置参数，最后追加完整属性路径
               for ((i=1; i<${#script_array[@]}; i++)); do
-                new_command+=("${script_array[$i]}")
+                arg="${script_array[$i]}"
+                if [[ "$arg" == "--flake" ]]; then
+                  has_flake=1
+                fi
+                if [[ "$arg" == -* || "$arg" == *=* ]]; then
+                  new_command+=("$arg")
+                fi
               done
+
+              if [[ $has_flake -eq 0 ]]; then
+                new_command+=("--flake")
+              fi
+
+              new_command+=("${{ matrix.package }}")
+
               echo "替换后的命令: ${new_command[@]}"
               "${new_command[@]}"
             else
+              # 非 nix-update 命令按原样执行
+              echo "执行更新命令(数组): ${script_array[@]}"
               "${script_array[@]}"
             fi
           }
 
-          # 根据不同类型执行命令
           case "$script_type" in
             "array")
-              # 数组类型：直接执行
-              script_array=($(echo "$script_json" | jq -r '.[]'))
+              mapfile -t script_array < <(echo "$script_json" | jq -r '.[]')
               execute_command_array "${script_array[@]}"
               ;;
             "string")
-              # 字符串类型：作为shell命令执行
               command_str=$(echo "$script_json" | jq -r '.')
-              echo "执行更新命令(字符串): $command_str"
-              bash -c "$command_str"
+              # 将字符串拆分为数组以便重写
+              read -r -a script_array <<< "$command_str"
+              execute_command_array "${script_array[@]}"
               ;;
             "object")
-              # 属性集类型：提取command字段
               if echo "$script_json" | jq -e 'has("command")' >/dev/null; then
                 command_type=$(echo "$script_json" | jq -r '.command | type')
                 if [ "$command_type" = "array" ]; then
-                  # 数组command：直接执行
-                  script_array=($(echo "$script_json" | jq -r '.command[]'))
+                  mapfile -t script_array < <(echo "$script_json" | jq -r '.command[]')
                   execute_command_array "${script_array[@]}"
                 elif [ "$command_type" = "string" ]; then
-                  # 字符串command：作为shell命令执行
                   command_str=$(echo "$script_json" | jq -r '.command')
-                  echo "执行更新命令(属性集-字符串): $command_str"
-                  bash -c "$command_str"
+                  read -r -a script_array <<< "$command_str"
+                  execute_command_array "${script_array[@]}"
                 else
                   echo "错误：不支持的command类型: $command_type"
                   exit 1
@@ -235,18 +323,12 @@ jobs:
           export HOME="$ORI_HOME"
           rm -rf "$TEMP_HOME"
 
-          # 检查是否有需要提交的更改
+          # 检查是否有需要提交的更改（不在此处提交，交由后续PR步骤）
           if [ -n "$(git status --porcelain)" ]; then
-              # 检测到更新，进行提交
-              git add *
-              git commit -m "updateScript: ${{ matrix.package }}"
-              
-              # 设置输出变量
               echo "has_update=true" >> $GITHUB_OUTPUT
               echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
               echo "更新完成: ${{ matrix.package }}"
           else
-              # 没有检测到更新
               echo "has_update=false" >> $GITHUB_OUTPUT
               echo "没有更新: ${{ matrix.package }}"
           fi
