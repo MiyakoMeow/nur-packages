@@ -426,22 +426,22 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  enable-automerge:
-    needs: [update-package, wait-for-ci]
-    if: needs.wait-for-ci.result == 'success' && needs.update-package.outputs.has_update == 'true'
-    runs-on: ubuntu-latest
-    steps:
       - name: Enable Pull Request Automerge
+        if: ${{ success() }}
         run: |
           # 解析PR数据
           PR_DATA='${{ needs.update-package.outputs.pr_data }}'
+          if [ -z "$PR_DATA" ] || [ "$PR_DATA" = "null" ]; then
+            echo "没有PR数据，跳过自动合并"
+            exit 0
+          fi
           PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
           PACKAGE=$(echo "$PR_DATA" | jq -r '.package')
-          
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "无效的PR编号，跳过自动合并"
+            exit 0
+          fi
           echo "启用PR #$PR_NUMBER ($PACKAGE) 的自动合并"
-          
-          # 启用自动合并
           gh pr merge "$PR_NUMBER" --auto --merge
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
