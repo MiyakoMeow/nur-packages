@@ -11,13 +11,13 @@
 }:
 stdenv.mkDerivation rec {
   pname = "ros-dev-tools";
-  version = "2eedebbfe100e21121fefa816b6ea43707545b16";
+  version = "0-unstable-2023-09-05";
 
   src = fetchFromGitHub {
     owner = "DSPEngineer";
     repo = "ros-dev-tools";
-    rev = version;
-    sha256 = "sha256-/b2zFBJMTwD/VQDEk7UoiZqmsvl7iFzSTBPzT0hRc4I=";
+    rev = "2eedebbfe100e21121fefa816b6ea43707545b16";
+    hash = "sha256-/b2zFBJMTwD/VQDEk7UoiZqmsvl7iFzSTBPzT0hRc4I=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
