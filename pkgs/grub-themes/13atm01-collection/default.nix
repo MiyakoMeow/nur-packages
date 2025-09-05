@@ -12,7 +12,7 @@ let
   repo = "GRUB-Theme";
   rev = "f4d764cab6bed5ab29e31965cca59420cc84ee0a"; # 替换为实际commit
   hash = "sha256-yceSIVxVpUNUDFjMXGYGkD4qyMRajU7TyDg/gl2NmAs="; # 替换为实际SHA256
-  version = "Lyco-v1.0-unstable-2025-06-15";
+  version = "Lyco-v1.0";
   # 获取仓库源码
   src = fetchFromGitHub {
     inherit
