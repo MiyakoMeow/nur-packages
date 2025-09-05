@@ -115,6 +115,12 @@ jobs:
                 if echo "$script_output" | jq -e 'has("group")' >/dev/null; then
                   group_name=$(echo "$script_output" | jq -r '.group')
                 fi
+                # 当未提供 group 时，回退为属性路径的上级前缀（去掉最后一段）
+                if [ -z "$group_name" ]; then
+                  if [[ "$pkg" == *.* ]]; then
+                    group_name=${pkg%.*}
+                  fi
+                fi
                 if echo "$script_output" | jq -e 'has("command")' >/dev/null; then
                   command_type=$(echo "$script_output" | jq -r '.command | type')
                   if [ "$command_type" = "array" ]; then
@@ -235,21 +241,43 @@ jobs:
           ")
           script_type=$(echo "$script_json" | jq -r 'type')
 
+          # 将命令数组重写为使用完整属性路径的 nix-update，并保留标志参数
           execute_command_array() {
             local script_array=("$@")
-            echo "执行更新命令(数组): ${script_array[@]}"
+            local cmd="${script_array[0]}"
 
-            # nixpkgs 行为：store 路径的 nix-update 替换为 "nix-update --flake"
-            if [[ "${script_array[0]}" =~ ^/nix/store/.*-nix-update.*bin/nix-update$ ]]; then
-              echo "检测到 nix-update 路径，使用 nix-update 直接调用"
+            # 将 store 路径的 nix-update 规范化为 "nix-update"
+            if [[ "$cmd" =~ ^/nix/store/.*/bin/nix-update$ ]]; then
+              cmd="nix-update"
+              script_array[0]="nix-update"
+            fi
+
+            if [[ "$cmd" == "nix-update" ]]; then
               local new_command=("nix-update")
-              new_command+=("--flake")
+              local has_flake=0
+
+              # 保留所有以 - 开头或包含 = 的标志参数；丢弃位置参数，最后追加完整属性路径
               for ((i=1; i<${#script_array[@]}; i++)); do
-                new_command+=("${script_array[$i]}")
+                arg="${script_array[$i]}"
+                if [[ "$arg" == "--flake" ]]; then
+                  has_flake=1
+                fi
+                if [[ "$arg" == -* || "$arg" == *=* ]]; then
+                  new_command+=("$arg")
+                fi
               done
+
+              if [[ $has_flake -eq 0 ]]; then
+                new_command+=("--flake")
+              fi
+
+              new_command+=("${{ matrix.package }}")
+
               echo "替换后的命令: ${new_command[@]}"
               "${new_command[@]}"
             else
+              # 非 nix-update 命令按原样执行
+              echo "执行更新命令(数组): ${script_array[@]}"
               "${script_array[@]}"
             fi
           }
@@ -261,8 +289,9 @@ jobs:
               ;;
             "string")
               command_str=$(echo "$script_json" | jq -r '.')
-              echo "执行更新命令(字符串): $command_str"
-              bash -lc "$command_str"
+              # 将字符串拆分为数组以便重写
+              read -r -a script_array <<< "$command_str"
+              execute_command_array "${script_array[@]}"
               ;;
             "object")
               if echo "$script_json" | jq -e 'has("command")' >/dev/null; then
@@ -272,8 +301,8 @@ jobs:
                   execute_command_array "${script_array[@]}"
                 elif [ "$command_type" = "string" ]; then
                   command_str=$(echo "$script_json" | jq -r '.command')
-                  echo "执行更新命令(属性集-字符串): $command_str"
-                  bash -lc "$command_str"
+                  read -r -a script_array <<< "$command_str"
+                  execute_command_array "${script_array[@]}"
                 else
                   echo "错误：不支持的command类型: $command_type"
                   exit 1
