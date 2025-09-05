@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -34,24 +34,29 @@ def run(cmd: List[str], cwd: Optional[Path] = None) -> Tuple[int, str, str]:
 def nix_eval_for_pkg(
     package_file: Path, system: str = DEFAULT_SYSTEM
 ) -> Dict[str, Optional[str]]:
-    # Evaluate derivation metadata using flake-pinned nixpkgs
     expr = (
         """
 let
   flake = builtins.getFlake "path:{repo}";
   pkgs = import flake.inputs.nixpkgs {{ system = "{system}"; }};
   lib = pkgs.lib;
-  drv = pkgs.callPackage {pkg} {{}};
-  getName = v: if v ? pname then v.pname else lib.getName v;
-  getVersion = v: if v ? version then v.version else lib.getVersion v;
-  getDesc = v: if v ? meta && v.meta ? description then v.meta.description else (if v ? description then v.description else "");
- in {{ pname = getName drv; version = getVersion drv; description = getDesc drv; }}
+  v = pkgs.callPackage {pkg} {{}};
+  target =
+    if lib.isDerivation v then v else
+    if lib.isAttrs v && v ? meta && lib.isDerivation v.meta then v.meta else
+    if lib.isAttrs v && v ? packagesInSet && (lib.length (lib.attrValues v.packagesInSet)) > 0 then (lib.head (lib.attrValues v.packagesInSet))
+    else throw "not a derivation";
+  getName = drv: if drv ? pname then drv.pname else lib.getName drv;
+  getVersion = drv: if drv ? version then drv.version else lib.getVersion drv;
+  getDesc = drv: if drv ? meta && drv.meta ? description then drv.meta.description else (if drv ? description then drv.description else "");
+ in {{ pname = getName target; version = getVersion target; description = getDesc target; }}
 """
     ).format(repo=str(REPO_ROOT), system=system, pkg=str(package_file))
     code, out, err = run(
         [
             "nix",
             "eval",
+            "--impure",
             "--json",
             "--extra-experimental-features",
             "nix-command flakes",
@@ -67,8 +72,52 @@ let
     return json.loads(out)
 
 
+def nix_list_children(
+    package_file: Path, system: str = DEFAULT_SYSTEM
+) -> List[Dict[str, Optional[str]]]:
+    expr = (
+        """
+let
+  flake = builtins.getFlake "path:{repo}";
+  pkgs = import flake.inputs.nixpkgs {{ system = "{system}"; }};
+  lib = pkgs.lib;
+  v = pkgs.callPackage {pkg} {{}};
+  children =
+    if lib.isDerivation v then {{}} else
+    if lib.isAttrs v && v ? packagesInSet then v.packagesInSet else
+    if lib.isAttrs v then v else {{}};
+  names = lib.filter (n: n != "meta" && (builtins.hasAttr n children) && lib.isDerivation (builtins.getAttr n children)) (lib.attrNames children);
+  toObj = name:
+    let drv = builtins.getAttr name children; in
+    {{ name = name;
+       version = if drv ? version then drv.version else lib.getVersion drv;
+       description = if drv ? meta && drv.meta ? description then drv.meta.description else (if drv ? description then drv.description else "");
+    }};
+ in map toObj names
+"""
+    ).format(repo=str(REPO_ROOT), system=system, pkg=str(package_file))
+    code, out, err = run(
+        [
+            "nix",
+            "eval",
+            "--impure",
+            "--json",
+            "--extra-experimental-features",
+            "nix-command flakes",
+            "--expr",
+            expr,
+        ],
+        cwd=REPO_ROOT,
+    )
+    if code != 0:
+        return []
+    try:
+        return json.loads(out)
+    except Exception:
+        return []
+
+
 essential_groups_order = [
-    # Prefer showing by-name first (flat, common lookup)
     "by-name",
 ]
 
@@ -76,7 +125,6 @@ essential_groups_order = [
 def find_packages() -> Dict[str, List[Dict[str, str]]]:
     groups: Dict[str, List[Dict[str, str]]] = {}
 
-    # 1) Nested groups under pkgs/, excluding by-name
     for entry in sorted(PKGS_DIR.iterdir()):
         if not entry.is_dir():
             continue
@@ -84,7 +132,6 @@ def find_packages() -> Dict[str, List[Dict[str, str]]]:
             continue
         group = entry.name
 
-        # Direct package at group root
         direct_pkg = None
         if (entry / "package.nix").is_file():
             direct_pkg = entry / "package.nix"
@@ -98,7 +145,6 @@ def find_packages() -> Dict[str, List[Dict[str, str]]]:
                 }
             )
 
-        # Subdirectory packages
         for sub in sorted(entry.iterdir()):
             if not sub.is_dir():
                 continue
@@ -116,7 +162,6 @@ def find_packages() -> Dict[str, List[Dict[str, str]]]:
                     }
                 )
 
-    # 2) by-name packages
     by_name_root = PKGS_DIR / "by-name"
     if by_name_root.is_dir():
         for prefix in sorted(by_name_root.iterdir()):
@@ -129,7 +174,7 @@ def find_packages() -> Dict[str, List[Dict[str, str]]]:
                 if pkg_file.is_file():
                     groups.setdefault("by-name", []).append(
                         {
-                            "usable_path": pkgdir.name,  # flat attr exposed by collectPackages using pname/name
+                            "usable_path": pkgdir.name,
                             "file": os.path.relpath(pkg_file, REPO_ROOT),
                         }
                     )
@@ -140,10 +185,11 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
     lines: List[str] = []
     lines.append("This section is auto-generated. Do not edit manually.")
     lines.append("")
-    lines.append(f"Last updated: {datetime.utcnow().isoformat(timespec='seconds')}Z")
+    lines.append(
+        f"Last updated: {datetime.now(timezone.utc).isoformat(timespec='seconds')}"
+    )
     lines.append("")
 
-    # Determine order: by-name first, then other groups alphabetically
     ordered_groups = [g for g in essential_groups_order if g in groups] + [
         g for g in sorted(groups.keys()) if g not in essential_groups_order
     ]
@@ -151,10 +197,28 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
     for group in ordered_groups:
         entries = sorted(groups[group], key=lambda x: x["usable_path"].lower())
 
-        rows: List[Tuple[str, str, str, str]] = []  # usable_path, version, desc, file
+        rows: List[Tuple[str, str, str, str]] = []
         for e in entries:
             file_rel = e["file"]
-            meta = nix_eval_for_pkg(REPO_ROOT / file_rel)
+            file_abs = REPO_ROOT / file_rel
+
+            children = nix_list_children(file_abs)
+            if children:
+                for child in children:
+                    usable = f"{e['usable_path']}.{child['name']}"
+                    version = child.get("version") or "-"
+                    desc = child.get("description") or ""
+                    rows.append((usable, version, desc, file_rel))
+                continue
+
+            try:
+                meta = nix_eval_for_pkg(file_abs)
+            except Exception as exc:
+                print(
+                    f"Skip non-derivation or eval error for {file_rel}: {exc}",
+                    file=sys.stderr,
+                )
+                continue
             version = meta.get("version") or "-"
             desc = meta.get("description") or ""
             rows.append((e["usable_path"], version, desc, file_rel))
@@ -164,7 +228,6 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
 
         lines.append(f"### {group}")
         lines.append("")
-        # Use user's wording: useable-path
         lines.append("| useable-path | version | description |")
         lines.append("| --- | --- | --- |")
         for usable, version, desc, file_rel in rows:
