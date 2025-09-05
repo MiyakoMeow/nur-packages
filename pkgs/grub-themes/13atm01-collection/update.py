@@ -90,7 +90,7 @@ def try_run(cmd: list[str]) -> tuple[bool, str]:
 def run_nix_update(attr_paths: list[str]) -> None:
     env = os.environ.copy()
     # Ensure flake mode
-    args_common = ["nix-update", "--flake"]
+    args_common = ["nix-update", "--flake", "--version=branch"]
     last_err = None
     for attr in attr_paths:
         ok, err = try_run(args_common + [attr])
