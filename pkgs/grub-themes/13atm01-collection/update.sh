@@ -30,7 +30,6 @@ else
     CLEANUP_REPO=1
 
     git clone \
-        --branch master \
         --depth 1 \
         https://github.com/13atm01/GRUB-Theme.git \
         "$REPO_PATH"
@@ -55,34 +54,21 @@ sanitize_name() {
 echo '{}' >"$OUTPUT_FILE"
 count=0
 
-# 遍历主题目录
-while IFS= read -r -d $'\0' theme_dir; do
-    dir_name=$(basename "$theme_dir")
+# 在仓库中查找包含 theme.txt 的目录（任意层级）
+# 仅匹配目录下直接包含 theme.txt 的情况
+while IFS= read -r -d $'\0' theme_txt; do
+    theme_dir="$(dirname "$theme_txt")"
 
-    # 获取内部子目录
-    inner_dirs=()
-    while IFS= read -r -d $'\0' inner_dir; do
-        inner_dirs+=("$inner_dir")
-    done < <(find "$theme_dir" -maxdepth 1 -mindepth 1 -type d -print0)
+    # 计算相对 REPO_PATH 的路径，作为复制路径
+    rel_path=$(realpath --relative-to "$REPO_PATH" "$theme_dir")
 
-    # 检查子目录数量
-    if [[ ${#inner_dirs[@]} -ne 1 ]]; then
-        echo "警告: 主题 '$dir_name' 应包含且仅包含一个子目录 (找到 ${#inner_dirs[@]} 个)" >&2
-        continue
-    fi
+    # 生成包名：使用上级目录名作为包名基础（与原逻辑一致）
+    parent_dir="$(dirname "$theme_dir")"
+    dir_name="$(basename "$parent_dir")"
+    inner_dir_name="$(basename "$theme_dir")"
 
-    inner_path="${inner_dirs[0]}"
-    inner_dir_name=$(basename "$inner_path")
-
-    # 检查theme.txt文件
-    if [[ ! -f "$inner_path/theme.txt" ]]; then
-        echo "警告: 主题 '$dir_name' 缺少 theme.txt 文件" >&2
-        continue
-    fi
-
-    # 生成包名
-    package_name=$(sanitize_name "$dir_name")""
-    theme_path="$dir_name/$inner_dir_name"
+    package_name="$(sanitize_name "$dir_name")"
+    theme_path="$rel_path"
 
     # 使用jq更新JSON对象
     jq --arg pkg "$package_name" --arg path "$theme_path" \
@@ -90,7 +76,7 @@ while IFS= read -r -d $'\0' theme_dir; do
     mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
 
     ((count++))
-done < <(find "$REPO_PATH" -maxdepth 1 -mindepth 1 -type d -print0)
+done < <(find "$REPO_PATH" -type f -name theme.txt -print0)
 
 # 美化输出格式
 jq -S . "$OUTPUT_FILE" >"$OUTPUT_FILE.tmp"
