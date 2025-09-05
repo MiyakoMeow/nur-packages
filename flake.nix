@@ -26,9 +26,7 @@
         }
       );
 
-      packages = forAllSystems (
-        system: nixpkgs.lib.filterAttrs (_: v: nixpkgs.lib.isDerivation v) self.legacyPackages.${system}
-      );
+      packages = forAllSystems (system: self.legacyPackages.${system});
 
       # 可选：添加开发环境
       devShells = forAllSystems (system: {

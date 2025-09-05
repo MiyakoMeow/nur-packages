@@ -40,21 +40,6 @@ let
         fi
       '';
 
-      passthru = {
-        # 组感知的更新脚本：任一主题触发均更新整个集合
-        updateScript = {
-          group = "grub-themes.star-rail";
-          command = [
-            "nix-shell"
-            "-p"
-            "python3"
-            "python3Packages.requests"
-            "--run"
-            "python3 pkgs/grub-themes/star-rail/update.py"
-          ];
-        };
-      };
-
       meta = with lib; {
         description = "Honkai: Star Rail GRUB theme (${pname})";
         homepage = "https://github.com/voidlhf/StarRailGrubThemes";
@@ -65,15 +50,40 @@ let
 
   # 创建所有主题包集合
   theme-packages = lib.mapAttrs mkThemePackage theme-info;
+
+  # 集合的 meta 包，承载统一更新脚本
+  metaPkg = stdenvNoCC.mkDerivation rec {
+    pname = "star-rail-themes";
+    version = "meta";
+
+    dontUnpack = true;
+    dontConfigure = true;
+    dontBuild = true;
+    dontInstall = true;
+
+    passthru.updateScript = {
+      group = "grub-themes.star-rail";
+      command = [
+        "nix-shell"
+        "-p"
+        "python3"
+        "python3Packages.requests"
+        "--run"
+        "python3 pkgs/grub-themes/star-rail/update.py"
+      ];
+    };
+
+    meta = with lib; {
+      description = "Honkai: Star Rail GRUB themes collection meta package";
+      homepage = "https://github.com/voidlhf/StarRailGrubThemes";
+      license = licenses.gpl3;
+      platforms = platforms.all;
+    };
+  };
 in
 # 直接暴露所有主题包，使其可以直接通过 grub-themes.star-rail.acheron 访问
 theme-packages
 // {
-  # 保留集合的元信息
-  meta = with lib; {
-    description = "Honkai: Star Rail GRUB themes collection";
-    homepage = "https://github.com/voidlhf/StarRailGrubThemes";
-    license = licenses.gpl3;
-    platforms = platforms.all;
-  };
+  # 在集合中暴露可执行更新脚本的 meta 包
+  meta = metaPkg;
 }

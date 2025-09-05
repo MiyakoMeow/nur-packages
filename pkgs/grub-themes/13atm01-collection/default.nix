@@ -32,10 +32,19 @@ let
     dontBuild = true;
     dontInstall = true;
 
-    passthru.updateScript = nix-update-script {
-      attrPath = "13atm01-themes";
-      extraArgs = [
-        "--version=branch"
+    # 统一更新脚本：生成 theme-list.json
+    passthru.updateScript = {
+      group = "grub-themes.13atm01-collection";
+      command = [
+        "nix-shell"
+        "-p"
+        "bash"
+        "jq"
+        "coreutils"
+        "gnused"
+        "git"
+        "--run"
+        "bash pkgs/grub-themes/13atm01-collection/update.sh"
       ];
     };
     meta = with lib; {
@@ -75,22 +84,6 @@ let
         fi
       '';
 
-      # Self updateScript -> 组感知 + nix-shell 依赖
-      passthru.updateScript = {
-        group = "grub-themes.13atm01-collection";
-        command = [
-          "nix-shell"
-          "-p"
-          "bash"
-          "jq"
-          "coreutils"
-          "gnused"
-          "git"
-          "--run"
-          "bash pkgs/grub-themes/13atm01-collection/update.sh"
-        ];
-      };
-
       meta = with lib; {
         description = "GRUB2 theme '${packageName}' from ${owner}/${repo}";
         homepage = "https://github.com/${owner}/${repo}";
@@ -101,7 +94,7 @@ let
 in
 {
   # 所有主题包的集合
-  packagesInSet = lib.mapAttrs mkThemePackage themeList // {
-    meta = metaPkg;
-  };
+  packagesInSet = lib.mapAttrs mkThemePackage themeList;
+  # 在集合顶层暴露 meta 包，便于 flake 访问
+  meta = metaPkg;
 }
