@@ -83,6 +83,13 @@ def get_release_assets(owner, repo, tag=None):
                 f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{tag}"
             )
             response = requests.get(release_url, headers=headers, timeout=15)
+            
+            # Handle rate limit exceeded
+            if response.status_code == 403 and "rate limit exceeded" in response.text.lower():
+                logger.error(f"Network error fetching releases: {response.status_code} {response.reason}")
+                logger.info("Skipping update due to GitHub rate limit")
+                sys.exit(0)
+            
             if response.status_code == 404:
                 logger.warning(f"Release tag '{tag}' not found for {owner}/{repo}")
                 return []
@@ -92,6 +99,12 @@ def get_release_assets(owner, repo, tag=None):
             # 只获取最新的 release
             latest_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
             response = requests.get(latest_url, headers=headers, timeout=15)
+
+            # Handle rate limit exceeded
+            if response.status_code == 403 and "rate limit exceeded" in response.text.lower():
+                logger.error(f"Network error fetching releases: {response.status_code} {response.reason}")
+                logger.info("Skipping update due to GitHub rate limit")
+                sys.exit(0)
 
             # 处理没有 release 的情况
             if response.status_code == 404:
