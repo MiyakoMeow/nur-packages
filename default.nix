@@ -23,6 +23,17 @@ let
     pkgs.callPackage path {
     };
 
+  # 安全导入：失败时仅告警并返回 null，不中断其它包解析
+  safeImportPackage =
+    path:
+    let
+      attempt = builtins.tryEval (importPackage path);
+    in
+    if attempt.success then
+      attempt.value
+    else
+      builtins.trace "WARNING: Failed to import package at ${toString path}; skipping." null;
+
   # 辅助函数：递归收集所有 derivations 并保留原始名称
   lib = pkgs.lib // {
     # 收集所有包到平面属性集（保留原始名称）
@@ -55,129 +66,91 @@ let
       # 从根属性集开始收集
       collector { } [ ] attrs;
   };
-  # === 处理特殊嵌套包结构 ===
-  # 自动检测所有嵌套包目录（除了by-name）
+  # === 统一的包发现逻辑 ===
+  # 判断目录是否包含直接包文件
+  hasDirectPackage =
+    dirPath:
+    let
+      pkg = dirPath + "/package.nix";
+      def = dirPath + "/default.nix";
+    in
+    (builtins.pathExists pkg) || (builtins.pathExists def);
+
+  # 获取目录下的直接包文件路径（优先 package.nix）
+  getDirectPackageFile =
+    dirPath:
+    let
+      pkg = dirPath + "/package.nix";
+      def = dirPath + "/default.nix";
+    in
+    if builtins.pathExists pkg then
+      pkg
+    else if builtins.pathExists def then
+      def
+    else
+      null;
+
+  # 递归发现：
+  # - depth = 0 仅检查直接包
+  # - depth > 0 若无直接包则在子目录中继续查找
+  discoverAt =
+    dirPath: depth:
+    let
+      directFile = getDirectPackageFile dirPath;
+    in
+    if directFile != null then
+      safeImportPackage directFile
+    else if depth > 0 then
+      let
+        contents = builtins.readDir dirPath;
+        subDirs = lib.filterAttrs (name: type: type == "directory") contents;
+        subNames = builtins.attrNames subDirs;
+        discovered = builtins.listToAttrs (
+          lib.filter (a: a.value != null) (
+            map (
+              n:
+              let
+                subPath = dirPath + "/${n}";
+                result = discoverAt subPath (depth - 1);
+              in
+              {
+                name = n;
+                value = result;
+              }
+            ) subNames
+          )
+        );
+      in
+      if discovered != { } then discovered else null
+    else
+      null;
+
+  # 发现 by-name 下的包树（两层：字母/组 -> 包）并扁平化为顶层属性
+  byNameTree = discoverAt ./pkgs/by-name 2;
+  allOutsidePackages = lib.collectPackages (if byNameTree == null then { } else byNameTree);
+
+  # 发现其它分组（排除 by-name），保留分组层级
   nestedPackages =
     let
       pkgsDir = ./pkgs;
     in
     if builtins.pathExists pkgsDir then
       let
-        allContents = builtins.readDir pkgsDir;
-        # 过滤出目录，排除by-name目录
-        nestedDirs = lib.filterAttrs (name: type: type == "directory" && name != "by-name") allContents;
-        nestedDirNames = builtins.attrNames nestedDirs;
-
-        # 处理每个嵌套目录
-        nestedPackageSets = map (
-          dirName:
+        contents = builtins.readDir pkgsDir;
+        groupDirs = lib.filterAttrs (name: type: type == "directory" && name != "by-name") contents;
+        groupNames = builtins.attrNames groupDirs;
+        groups = map (
+          groupName:
           let
-            dirPath = pkgsDir + "/${dirName}";
-            dirContents = builtins.readDir dirPath;
-
-            # 首先检查是否有直接的package.nix或default.nix
-            directPackageFile = dirPath + "/package.nix";
-            directDefaultFile = dirPath + "/default.nix";
-
-            # 检查子目录中的包
-            packageDirs = lib.filterAttrs (
-              name: type:
-              type == "directory"
-              && (
-                builtins.pathExists (dirPath + "/${name}/package.nix")
-                || builtins.pathExists (dirPath + "/${name}/default.nix")
-              )
-            ) dirContents;
-            packageNames = builtins.attrNames packageDirs;
-
-            # 为每个子目录包创建包
-            subPackages = builtins.listToAttrs (
-              map (
-                pkgName:
-                let
-                  pkgFile = dirPath + "/${pkgName}/package.nix";
-                  defaultFile = dirPath + "/${pkgName}/default.nix";
-                  file = if builtins.pathExists pkgFile then pkgFile else defaultFile;
-                in
-                {
-                  name = pkgName;
-                  value = importPackage file;
-                }
-              ) packageNames
-            );
-
-            # 如果有直接包，使用直接包；否则使用子目录包
-            finalPackages =
-              if builtins.pathExists directPackageFile || builtins.pathExists directDefaultFile then
-                let
-                  file = if builtins.pathExists directPackageFile then directPackageFile else directDefaultFile;
-                in
-                {
-                  ${dirName} = importPackage file;
-                }
-              else if subPackages != { } then
-                subPackages
-              else
-                { };
+            groupPath = pkgsDir + "/${groupName}";
+            result = discoverAt groupPath 1;
           in
-          if finalPackages != { } then { ${dirName} = finalPackages; } else { }
-        ) nestedDirNames;
-
-        # 合并所有嵌套包集合
-        mergedNestedPackages = lib.foldl' (acc: pkgSet: acc // pkgSet) { } nestedPackageSets;
+          if result != null then { ${groupName} = result; } else { }
+        ) groupNames;
       in
-      mergedNestedPackages
+      lib.foldl' (acc: s: acc // s) { } groups
     else
       { };
-
-  # 自动发现所有包目录
-  packagesDir = ./pkgs/by-name;
-  # 获取所有by-name目录
-  byNameDirs = builtins.attrNames (builtins.readDir packagesDir);
-
-  # 为每个目录收集所有的package.nix文件（递归查找子目录）
-  allPackageFiles = lib.concatLists (
-    map (
-      dirName:
-      let
-        dirPath = packagesDir + "/${dirName}";
-        dirContents = builtins.readDir dirPath;
-        # 获取所有子目录
-        subDirs = lib.filterAttrs (name: type: type == "directory") dirContents;
-        subDirNames = builtins.attrNames subDirs;
-
-        # 为每个子目录查找package.nix
-        packageFiles = map (
-          subDirName:
-          let
-            subDirPath = dirPath + "/${subDirName}";
-            packageFile = subDirPath + "/package.nix";
-          in
-          if builtins.pathExists packageFile then
-            {
-              name = subDirName;
-              path = packageFile;
-            }
-          else
-            null
-        ) subDirNames;
-
-        # 过滤掉null值
-        validPackageFiles = lib.filter (file: file != null) packageFiles;
-      in
-      validPackageFiles
-    ) byNameDirs
-  );
-
-  # 为每个包文件创建包，并展开所有的包
-  allOutsidePackages = lib.collectPackages (
-    builtins.listToAttrs (
-      map (pkgFile: {
-        name = toString pkgFile.path;
-        value = importPackage pkgFile.path;
-      }) allPackageFiles
-    )
-  );
 in
 specialAttrs // allOutsidePackages // nestedPackages
 # 按组名组织的包组（每个组是平面属性集）
