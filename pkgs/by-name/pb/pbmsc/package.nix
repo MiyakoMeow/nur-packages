@@ -49,36 +49,76 @@ stdenvNoCC.mkDerivation rec {
     install -Dm555 /dev/stdin $out/bin/pbmsc <<'EOF'
     #!/usr/bin/env bash
     set -euo pipefail
-    APP_DIR="@out@/share/pbmsc"
-    USER_DATA="''${XDG_DATA_HOME:-$HOME/.local/share}/pbmsc"
-    CONFIG="$USER_DATA/pBMSC.exe.config"
+
+    APP_ROOT="@out@/share/pbmsc"
+    APP_DIR="$APP_ROOT"
+    BASE_DATA_DIR="$(printenv XDG_DATA_HOME)"
+    [ -n "$BASE_DATA_DIR" ] || BASE_DATA_DIR="$HOME/.local/share"
+    USER_DATA="$BASE_DATA_DIR/pbmsc"
+
     mkdir -p "$USER_DATA"
-    if [ ! -e "$CONFIG" ]; then
-      if [ -f "$APP_DIR/pBMSC.exe.config" ]; then
-        cp "$APP_DIR/pBMSC.exe.config" "$CONFIG"
-      else
-        touch "$CONFIG"
+
+    # Initialize user data directories from app content if missing
+    for dir in "$APP_DIR"/*/; do
+      [ -d "$dir" ] || continue
+      name="$(basename "$dir")"
+      if [ ! -d "$USER_DATA/$name" ]; then
+        cp -r --no-preserve=all "$dir" "$USER_DATA/$name"
       fi
+    done
+
+    # Ensure base config file exists if provided by app
+    if [ -f "$APP_DIR/pBMSC.exe.config" ] && [ ! -f "$USER_DATA/pBMSC.exe.config" ]; then
+      cp "$APP_DIR/pBMSC.exe.config" "$USER_DATA/pBMSC.exe.config"
     fi
-    RUNTIME_DIR=$(mktemp -d -t pbmsc-XXXXXX)
-    cleanup() { rm -rf "$RUNTIME_DIR"; }
+
+    RUNTIME_DIR=$(mktemp -d -t pbmsc.XXXXXX)
+
+    cleanup() {
+      # Sync new top-level directories back to user data
+      find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -type d ! -name wineprefix | while read -r d; do
+        name="$(basename "$d")"
+        if [ ! -e "$USER_DATA/$name" ]; then
+          cp -r --no-preserve=all "$d" "$USER_DATA/$name"
+        fi
+      done
+      # Sync top-level files back to user data
+      find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -f "{}" "$USER_DATA/" 2>/dev/null || true
+      rm -rf "$RUNTIME_DIR"
+    }
     trap cleanup EXIT
+
+    # Prepare runtime with app files
     cp -r "$APP_DIR"/. "$RUNTIME_DIR"/
     chmod -R u+rwX "$RUNTIME_DIR"
-    rm -f "$RUNTIME_DIR/pBMSC.exe.config"
-    ln -s "$CONFIG" "$RUNTIME_DIR/pBMSC.exe.config"
+
+    # Link user data into runtime (files and directories)
+    while IFS= read -r -d $'\0' f; do
+      base="$(basename "$f")"
+      [ -d "$RUNTIME_DIR/$base" ] && rm -rf "$RUNTIME_DIR/$base"
+      ln -sf "$f" "$RUNTIME_DIR/$base"
+    done < <(find "$USER_DATA" -mindepth 1 -maxdepth 1 -type f -print0)
+    while IFS= read -r -d $'\0' d; do
+      name="$(basename "$d")"
+      [ -e "$RUNTIME_DIR/$name" ] && rm -rf "$RUNTIME_DIR/$name"
+      ln -sfT "$d" "$RUNTIME_DIR/$name"
+    done < <(find "$USER_DATA" -mindepth 1 -maxdepth 1 -type d -print0)
+
     cd "$RUNTIME_DIR"
     export WINEDEBUG=-all
     export WINEARCH=win64
     export WINEPREFIX="$RUNTIME_DIR/wineprefix"
+
+    # Disable builtin mscoree/mshtml to allow Wine Mono installation
     export WINEDLLOVERRIDES="mscoree,mshtml=d"
-    # 初始化前缀并安装 wine-mono（每次启动确保存在）
     MONO_DIR="${wineWowPackages.full}/share/wine/mono"
     MONO_MSI=$(ls "$MONO_DIR"/wine-mono-*.msi 2>/dev/null | head -n1 || true)
     if [ -n "$MONO_MSI" ]; then
       "${wineWowPackages.full}/bin/wine" msiexec /i "$MONO_MSI" /qn || true
     fi
+    # Re-enable mshtml
     export WINEDLLOVERRIDES="mshtml="
+
     exec "${wineWowPackages.full}/bin/wine" "pBMSC.exe" "$@"
     EOF
     substituteInPlace $out/bin/pbmsc --replace "@out@" "$out"

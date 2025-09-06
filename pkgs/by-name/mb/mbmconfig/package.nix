@@ -49,43 +49,86 @@ stdenvNoCC.mkDerivation rec {
     install -Dm555 /dev/stdin $out/bin/mbmconfig <<'EOF'
     #!/usr/bin/env bash
     set -euo pipefail
+
     APP_ROOT="@out@/share/mbmconfig"
     APP_DIR="$APP_ROOT/mBMconfig"
-    USER_DATA="''${XDG_DATA_HOME:-$HOME/.local/share}/mbmconfig"
-    CONFIG="$USER_DATA/mBMconfig.exe.config"
+    BASE_DATA_DIR="$(printenv XDG_DATA_HOME)"
+    [ -n "$BASE_DATA_DIR" ] || BASE_DATA_DIR="$HOME/.local/share"
+    USER_DATA="$BASE_DATA_DIR/mbmconfig"
+
     mkdir -p "$USER_DATA"
-    if [ ! -e "$CONFIG" ]; then
-      if [ -f "$APP_DIR/mBMconfig.exe.config" ]; then
-        cp "$APP_DIR/mBMconfig.exe.config" "$CONFIG"
-      else
-        touch "$CONFIG"
+
+    # Initialize user data directories from app content if missing
+    for dir in "$APP_DIR"/*/; do
+      [ -d "$dir" ] || continue
+      name="$(basename "$dir")"
+      if [ ! -d "$USER_DATA/$name" ]; then
+        cp -r --no-preserve=all "$dir" "$USER_DATA/$name"
       fi
+    done
+
+    # Ensure bundled mbmconfig_files is available in user data
+    if [ -d "$APP_ROOT/mbmconfig_files" ] && [ ! -d "$USER_DATA/mbmconfig_files" ]; then
+      cp -r --no-preserve=all "$APP_ROOT/mbmconfig_files" "$USER_DATA/"
     fi
-    RUNTIME_DIR=$(mktemp -d -t mbmconfig-XXXXXX)
-    cleanup() { rm -rf "$RUNTIME_DIR"; }
+
+    # Ensure base config file exists if provided by app
+    if [ -f "$APP_DIR/mBMconfig.exe.config" ] && [ ! -f "$USER_DATA/mBMconfig.exe.config" ]; then
+      cp "$APP_DIR/mBMconfig.exe.config" "$USER_DATA/mBMconfig.exe.config"
+    fi
+
+    RUNTIME_DIR=$(mktemp -d -t mbmconfig.XXXXXX)
+
+    cleanup() {
+      # Sync new top-level directories back to user data
+      find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -type d ! -name wineprefix | while read -r d; do
+        name="$(basename "$d")"
+        if [ ! -e "$USER_DATA/$name" ]; then
+          cp -r --no-preserve=all "$d" "$USER_DATA/$name"
+        fi
+      done
+      # Sync top-level files back to user data
+      find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -f "{}" "$USER_DATA/" 2>/dev/null || true
+      rm -rf "$RUNTIME_DIR"
+    }
     trap cleanup EXIT
+
+    # Prepare runtime with app files
     cp -r "$APP_DIR"/. "$RUNTIME_DIR"/
-    if [ -d "$APP_ROOT/mbmconfig_files" ]; then
-      cp -r "$APP_ROOT/mbmconfig_files"/* "$RUNTIME_DIR"/
-    fi
     chmod -R u+rwX "$RUNTIME_DIR"
-    rm -f "$RUNTIME_DIR/mBMconfig.exe.config"
-    ln -s "$CONFIG" "$RUNTIME_DIR/mBMconfig.exe.config"
+
+    # Link user data into runtime (files and directories)
+    while IFS= read -r -d $'\0' f; do
+      base="$(basename "$f")"
+      [ -d "$RUNTIME_DIR/$base" ] && rm -rf "$RUNTIME_DIR/$base"
+      ln -sf "$f" "$RUNTIME_DIR/$base"
+    done < <(find "$USER_DATA" -mindepth 1 -maxdepth 1 -type f -print0)
+    while IFS= read -r -d $'\0' d; do
+      name="$(basename "$d")"
+      [ -e "$RUNTIME_DIR/$name" ] && rm -rf "$RUNTIME_DIR/$name"
+      ln -sfT "$d" "$RUNTIME_DIR/$name"
+    done < <(find "$USER_DATA" -mindepth 1 -maxdepth 1 -type d -print0)
+
+    # Useful for dlls shipped in mbmconfig_files/dll
     if [ -d "$RUNTIME_DIR/mbmconfig_files/dll" ]; then
       cp -n "$RUNTIME_DIR/mbmconfig_files/dll"/*.dll "$RUNTIME_DIR"/ || true
     fi
+
     cd "$RUNTIME_DIR"
     export WINEDEBUG=-all
     export WINEARCH=win64
     export WINEPREFIX="$RUNTIME_DIR/wineprefix"
+
+    # Disable builtin mscoree/mshtml to allow Wine Mono installation
     export WINEDLLOVERRIDES="mscoree,mshtml=d"
-    # 初始化前缀并安装 wine-mono（每次启动确保存在）
     MONO_DIR="${wineWowPackages.full}/share/wine/mono"
     MONO_MSI=$(ls "$MONO_DIR"/wine-mono-*.msi 2>/dev/null | head -n1 || true)
     if [ -n "$MONO_MSI" ]; then
       "${wineWowPackages.full}/bin/wine" msiexec /i "$MONO_MSI" /qn || true
     fi
+    # Re-enable mshtml
     export WINEDLLOVERRIDES="mshtml="
+
     exec "${wineWowPackages.full}/bin/wine" "mBMconfig.exe" "$@"
     EOF
     substituteInPlace $out/bin/mbmconfig --replace "@out@" "$out"
