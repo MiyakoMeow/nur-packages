@@ -33,7 +33,7 @@ stdenvNoCC.mkDerivation rec {
     while IFS= read -r -d $'\0' p; do
       case "$p" in
         *\\*)
-          target="''${p//\\\\//}"
+          target="''${p//\\//}"
           if [ "$p" != "$target" ]; then
             mkdir -p "$(dirname "$target")"
             mv -f "$p" "$target"
@@ -64,15 +64,15 @@ stdenvNoCC.mkDerivation rec {
       name="$(basename "$link")"
       target="$(readlink -f "$link" 2>/dev/null || true)"
       if [ -z "$target" ] || [ ! -e "$target" ]; then
-        if [ -e "$APP_DIR/$name" ]; then ln -sfT "$APP_DIR/$name" "$link"; fi
+        if [ -e "$APP_ROOT/$name" ]; then ln -sfT "$APP_ROOT/$name" "$link"; fi
         continue
       fi
       case "$target" in
-        "$APP_DIR"/*)
+        "$APP_ROOT"/*)
           :
           ;;
         /nix/store/*)
-          if [ -e "$APP_DIR/$name" ]; then ln -sfT "$APP_DIR/$name" "$link"; fi
+          if [ -e "$APP_ROOT/$name" ]; then ln -sfT "$APP_ROOT/$name" "$link"; fi
           ;;
         *)
           :
@@ -80,14 +80,17 @@ stdenvNoCC.mkDerivation rec {
       esac
     done
 
-    # Initialize user data directories from app content if missing
-    for dir in "$APP_DIR"/*/; do
-      [ -d "$dir" ] || continue
-      name="$(basename "$dir")"
-      if [ ! -d "$USER_DATA/$name" ]; then
-        cp -r --no-preserve=all "$dir" "$USER_DATA/$name"
+    # Symlink all top-level files and directories from app into user data
+    while IFS= read -r -d $'\0' entry; do
+      name="$(basename "$entry")"
+      if [ ! -e "$USER_DATA/$name" ]; then
+        if [ -d "$entry" ]; then
+          ln -sfT "$entry" "$USER_DATA/$name"
+        else
+          ln -sf "$entry" "$USER_DATA/$name"
+        fi
       fi
-    done
+    done < <(find "$APP_ROOT" -mindepth 1 -maxdepth 1 -print0)
 
     RUNTIME_DIR=$(mktemp -d -t mbmplay.XXXXXX)
 
@@ -112,9 +115,6 @@ stdenvNoCC.mkDerivation rec {
 
     # Prepare runtime with app files
     cp -r "$APP_DIR"/. "$RUNTIME_DIR"/
-    if [ -d "$APP_ROOT/mbmconfig_files" ]; then
-      cp -r "$APP_ROOT/mbmconfig_files"/* "$RUNTIME_DIR"/ || true
-    fi
     chmod -R u+rwX "$RUNTIME_DIR"
 
     # Link user data into runtime (files and directories)
