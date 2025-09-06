@@ -138,7 +138,7 @@ stdenv.mkDerivation rec {
     for cfg in "\''${config_files[@]}"; do
       user_cfg="\$USER_DATA_DIR/\$cfg"
       if [ -f "\$user_cfg" ]; then
-        cp -f "\$user_cfg" "\$RUNTIME_DIR/"
+        ln -sf "\$user_cfg" "\$RUNTIME_DIR/"
       fi
     done
 
