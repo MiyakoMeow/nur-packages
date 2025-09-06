@@ -132,5 +132,18 @@ stdenv.mkDerivation rec {
     maintainers = [ ]; # 替换为维护者信息
   };
 
-  passthru.updateScript = ./update.sh;
+  passthru.updateScript = {
+    group = "fr.free-download-manager";
+    command = [
+      "nix-shell"
+      "-p"
+      "python3"
+      "python3Packages.requests"
+      "python3Packages.beautifulsoup4"
+      "nix-update"
+      "git"
+      "--run"
+      "bash -lc 'latest_version=$(python3 pkgs/by-name/fr/free-download-manager/update_version.py) && echo Latest version found: $latest_version && nix-update free-download-manager --version $latest_version'"
+    ];
+  };
 }
