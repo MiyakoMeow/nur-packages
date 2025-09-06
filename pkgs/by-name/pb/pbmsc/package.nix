@@ -113,7 +113,7 @@ stdenvNoCC.mkDerivation rec {
     homepage = "https://github.com/psyk2642/iBMSC";
     license = licenses.unfreeRedistributable;
     maintainers = [ ];
-    platforms = [ "x86_64-linux" ];
+    platforms = with lib.platforms; x86_64;
     mainProgram = pname;
   };
 }

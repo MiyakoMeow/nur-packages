@@ -122,7 +122,7 @@ stdenvNoCC.mkDerivation rec {
     homepage = "https://mistyblue.info";
     license = licenses.mit;
     maintainers = [ ];
-    platforms = [ "x86_64-linux" ];
+    platforms = with lib.platforms; x86_64;
     mainProgram = pname;
   };
 }
