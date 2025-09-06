@@ -12,7 +12,6 @@
   makeDesktopItem,
   autoPatchelfHook,
   nix-update-script,
-  writableTmpDirAsHomeHook,
 }:
 
 buildGoModule (finalAttrs: rec {
@@ -44,7 +43,6 @@ buildGoModule (finalAttrs: rec {
     nodejs
     npmHooks.npmConfigHook
     copyDesktopItems
-    writableTmpDirAsHomeHook
   ];
 
   buildInputs = [ webkitgtk_4_1 ];
