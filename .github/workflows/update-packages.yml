@@ -194,7 +194,7 @@ jobs:
       - name: Install required tools
         run: |
           # 安装通用工具（包括git用于提交）
-          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#nix-update nixpkgs#bash nixpkgs#gh
+          nix profile install nixpkgs#git nixpkgs#python313 nixpkgs#python313Packages.requests nixpkgs#python313Packages.beautifulsoup4 nixpkgs#nix-update nixpkgs#bash nixpkgs#gh
 
       - name: Update package
         id: update
