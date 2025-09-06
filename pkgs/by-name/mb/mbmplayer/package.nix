@@ -10,7 +10,7 @@
 }:
 
 stdenvNoCC.mkDerivation rec {
-  pname = "mbmplayer";
+  pname = "mbmplay";
   version = "3.24.0824.1";
 
   src = fetchurl {
@@ -27,8 +27,8 @@ stdenvNoCC.mkDerivation rec {
   ];
 
   installPhase = ''
-    install -dm755 $out/share/mbmplayer
-    7z x -y -o"$out/share/mbmplayer" "$src"
+    install -dm755 $out/share/mbmplay
+    7z x -y -o"$out/share/mbmplay" "$src"
     # 修正反斜杠为目录分隔符
     while IFS= read -r -d $'\0' p; do
       case "$p" in
@@ -40,17 +40,17 @@ stdenvNoCC.mkDerivation rec {
           fi
         ;;
       esac
-    done < <(find "$out/share/mbmplayer" -depth -print0)
+    done < <(find "$out/share/mbmplay" -depth -print0)
 
-    chmod -R u+rwX,go+rX $out/share/mbmplayer
+    chmod -R u+rwX,go+rX $out/share/mbmplay
 
     install -dm755 $out/bin
 
-    install -Dm555 /dev/stdin $out/bin/mbmplayer <<'EOF'
+    install -Dm555 /dev/stdin $out/bin/mbmplay <<'EOF'
     #!/usr/bin/env bash
     set -euo pipefail
 
-    APP_ROOT="@out@/share/mbmplayer"
+    APP_ROOT="@out@/share/mbmplay"
     APP_DIR="$APP_ROOT/mBMplay"
     BASE_DATA_DIR="$(printenv XDG_DATA_HOME)"
     [ -n "$BASE_DATA_DIR" ] || BASE_DATA_DIR="$HOME/.local/share"
@@ -108,8 +108,8 @@ stdenvNoCC.mkDerivation rec {
     export WINEPREFIX="$RUNTIME_DIR/wineprefix"
 
     # 提供快速烟雾测试：仅验证脚本与目录准备是否正常
-    if [ "$(printenv MBMPLAYER_SMOKE)" = "1" ]; then
-      echo "mbmplayer smoke-ok"
+    if [ "$(printenv MBMPLAY_SMOKE)" = "1" ]; then
+      echo "mbmplay smoke-ok"
       exit 0
     fi
 
@@ -128,7 +128,7 @@ stdenvNoCC.mkDerivation rec {
 
     exec "${wineWowPackages.full}/bin/wine" "mBMplay.exe" "$@"
     EOF
-    substituteInPlace $out/bin/mbmplayer --replace "@out@" "$out"
+    substituteInPlace $out/bin/mbmplay --replace "@out@" "$out"
   '';
 
   desktopItems = [
