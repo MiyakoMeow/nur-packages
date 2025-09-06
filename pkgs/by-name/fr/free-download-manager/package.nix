@@ -131,4 +131,6 @@ stdenv.mkDerivation rec {
     platforms = [ "x86_64-linux" ];
     maintainers = [ ]; # 替换为维护者信息
   };
+
+  passthru.updateScript = ./update.sh;
 }
