@@ -91,9 +91,9 @@ let
       };
     };
 in
-{
-  # 所有主题包的集合
-  packagesInSet = lib.mapAttrs mkThemePackage themeList;
-  # 在集合顶层暴露 meta 包，便于 flake 访问
-  meta = metaPkg;
-}
+(
+  let
+    themePkgs = lib.mapAttrs mkThemePackage themeList;
+  in
+  themePkgs // { meta = metaPkg; }
+)

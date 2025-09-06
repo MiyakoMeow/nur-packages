@@ -37,31 +37,6 @@ let
   # 基础库
   lib = pkgs.lib;
 
-  # 收集所有 derivations 为平面属性集（键为 pname 或 name）
-  collectPackages =
-    attrs:
-    let
-      collector =
-        acc: path: value:
-        if lib.isDerivation value then
-          let
-            pkgName = value.pname or (lib.getName value);
-          in
-          if acc ? ${pkgName} then
-            builtins.trace "WARNING: Duplicate package name '${pkgName}' detected. Replacing old derivation." (
-              acc // { ${pkgName} = value; }
-            )
-          else
-            acc // { ${pkgName} = value; }
-        else if value ? packagesInSet then
-          collector acc path value.packagesInSet
-        else if lib.isAttrs value then
-          lib.foldl' (acc: key: collector acc (path ++ [ key ]) value.${key}) acc (lib.attrNames value)
-        else
-          acc;
-    in
-    collector { } [ ] attrs;
-
   # === 统一的包发现逻辑 ===
   # 判断目录是否包含直接包文件
   hasDirectPackage =
@@ -72,16 +47,16 @@ let
     in
     (builtins.pathExists pkg) || (builtins.pathExists def);
 
-  # 获取目录下的直接包文件路径（优先 package.nix）
+  # 获取目录下的直接包文件路径（可选仅允许 package.nix）
   getDirectPackageFile =
-    dirPath:
+    dirPath: onlyPkg:
     let
       pkg = dirPath + "/package.nix";
       def = dirPath + "/default.nix";
     in
     if builtins.pathExists pkg then
       pkg
-    else if builtins.pathExists def then
+    else if (!onlyPkg) && builtins.pathExists def then
       def
     else
       null;
@@ -89,41 +64,102 @@ let
   # 递归发现：
   # - depth = 0 仅检查直接包
   # - depth > 0 若无直接包则在子目录中继续查找
-  discoverAt =
-    dirPath: depth:
+  discover =
+    dirPath: depth: flatten: onlyPkg:
     let
-      directFile = getDirectPackageFile dirPath;
+      directFile = getDirectPackageFile dirPath onlyPkg;
+
+      # 将任意值拍平成 { name -> derivation } 形式（忽略 meta、非 derivation）
+      flattenValue =
+        value:
+        if value == null then
+          { }
+        else if lib.isDerivation value then
+          let
+            key = value.pname or (lib.getName value);
+          in
+          {
+            ${key} = value;
+          }
+        else if lib.isAttrs value then
+          let
+            names = lib.attrNames value;
+          in
+          lib.foldl' (
+            acc: n:
+            let
+              v = value.${n};
+            in
+            if n == "meta" then
+              acc
+            else if lib.isDerivation v then
+              let
+                k = v.pname or (lib.getName v);
+              in
+              if acc ? ${k} then
+                builtins.trace "WARNING: Duplicate package name '${k}' detected. Replacing old derivation." (
+                  acc // { ${k} = v; }
+                )
+              else
+                acc // { ${k} = v; }
+            else if lib.isAttrs v then
+              acc // (flattenValue v)
+            else
+              acc
+          ) { } names
+        else
+          { };
     in
     if directFile != null then
-      safeImportPackage directFile
+      let
+        v = safeImportPackage directFile;
+      in
+      if flatten then flattenValue v else v
     else if depth > 0 then
       let
         contents = builtins.readDir dirPath;
         subDirs = lib.filterAttrs (name: type: type == "directory") contents;
         subNames = builtins.attrNames subDirs;
-        discovered = builtins.listToAttrs (
-          lib.filter (a: a.value != null) (
-            map (
-              n:
-              let
-                subPath = dirPath + "/${n}";
-                result = discoverAt subPath (depth - 1);
-              in
-              {
-                name = n;
-                value = result;
-              }
-            ) subNames
-          )
-        );
+        results = map (
+          n:
+          let
+            subPath = dirPath + "/${n}";
+            r = discover subPath (depth - 1) flatten onlyPkg;
+          in
+          {
+            name = n;
+            value = r;
+          }
+        ) subNames;
       in
-      if discovered != { } then discovered else null
+      if flatten then
+        lib.foldl' (
+          acc: a:
+          if a.value == null then
+            acc
+          else
+            let
+              names = lib.attrNames a.value;
+            in
+            lib.foldl' (
+              acc2: n:
+              if acc2 ? ${n} then
+                builtins.trace "WARNING: Duplicate package name '${n}' detected. Replacing old derivation." (
+                  acc2 // { ${n} = a.value.${n}; }
+                )
+              else
+                acc2 // { ${n} = a.value.${n}; }
+            ) acc names
+        ) { } results
+      else
+        builtins.listToAttrs (lib.filter (a: a.value != null) results)
+    else if flatten then
+      { }
     else
       null;
 
   # 发现 by-name 下的包树（两层：字母/组 -> 包）并扁平化为顶层属性
-  byNameTree = discoverAt ./pkgs/by-name 2;
-  allOutsidePackages = collectPackages (if byNameTree == null then { } else byNameTree);
+  allOutsidePackages = discover ./pkgs/by-name 2 true true;
 
   # 发现其它分组（排除 by-name），保留分组层级
   nestedPackages =
@@ -139,7 +175,7 @@ let
           groupName:
           let
             groupPath = pkgsDir + "/${groupName}";
-            result = discoverAt groupPath 1;
+            result = discover groupPath 1 false false;
           in
           if result != null then { ${groupName} = result; } else { }
         ) groupNames;

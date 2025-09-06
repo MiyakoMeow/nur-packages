@@ -43,7 +43,6 @@ let
   target =
     if lib.isDerivation v then v else
     if lib.isAttrs v && v ? meta && lib.isDerivation v.meta then v.meta else
-    if lib.isAttrs v && v ? packagesInSet && (lib.length (lib.attrValues v.packagesInSet)) > 0 then (lib.head (lib.attrValues v.packagesInSet))
     else throw "not a derivation";
   getName = drv: if drv ? pname then drv.pname else lib.getName drv;
   getVersion = drv: if drv ? version then drv.version else lib.getVersion drv;
@@ -83,7 +82,6 @@ let
   v = pkgs.callPackage {pkg} {{}};
   children =
     if lib.isDerivation v then {{}} else
-    if lib.isAttrs v && v ? packagesInSet then v.packagesInSet else
     if lib.isAttrs v then v else {{}};
   names = lib.filter (n: n != "meta" && (builtins.hasAttr n children) && lib.isDerivation (builtins.getAttr n children)) (lib.attrNames children);
   toObj = name:
