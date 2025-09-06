@@ -34,38 +34,34 @@ let
     else
       builtins.trace "WARNING: Failed to import package at ${toString path}; skipping." null;
 
-  # 辅助函数：递归收集所有 derivations 并保留原始名称
-  lib = pkgs.lib // {
-    # 收集所有包到平面属性集（保留原始名称）
-    collectPackages =
-      attrs:
-      let
-        # 递归收集函数
-        collector =
-          acc: path: value:
-          if lib.isDerivation value then
-            # 遇到 derivation，使用其名称（pname 或 name）作为键
-            let
-              pkgName = value.pname or (lib.getName value);
-            in
-            if acc ? ${pkgName} then
-              builtins.trace "WARNING: Duplicate package name '${pkgName}' detected. Replacing old derivation." (
-                acc // { ${pkgName} = value; }
-              )
-            else
+  # 基础库
+  lib = pkgs.lib;
+
+  # 收集所有 derivations 为平面属性集（键为 pname 或 name）
+  collectPackages =
+    attrs:
+    let
+      collector =
+        acc: path: value:
+        if lib.isDerivation value then
+          let
+            pkgName = value.pname or (lib.getName value);
+          in
+          if acc ? ${pkgName} then
+            builtins.trace "WARNING: Duplicate package name '${pkgName}' detected. Replacing old derivation." (
               acc // { ${pkgName} = value; }
-          else if value ? packagesInSet then
-            # 处理包集合：递归处理 packagesInSet
-            collector acc path value.packagesInSet
-          else if lib.isAttrs value then
-            # 递归处理普通属性集
-            lib.foldl' (acc: key: collector acc (path ++ [ key ]) value.${key}) acc (lib.attrNames value)
+            )
           else
-            acc; # 忽略非属性/非 derivation
-      in
-      # 从根属性集开始收集
-      collector { } [ ] attrs;
-  };
+            acc // { ${pkgName} = value; }
+        else if value ? packagesInSet then
+          collector acc path value.packagesInSet
+        else if lib.isAttrs value then
+          lib.foldl' (acc: key: collector acc (path ++ [ key ]) value.${key}) acc (lib.attrNames value)
+        else
+          acc;
+    in
+    collector { } [ ] attrs;
+
   # === 统一的包发现逻辑 ===
   # 判断目录是否包含直接包文件
   hasDirectPackage =
@@ -127,7 +123,7 @@ let
 
   # 发现 by-name 下的包树（两层：字母/组 -> 包）并扁平化为顶层属性
   byNameTree = discoverAt ./pkgs/by-name 2;
-  allOutsidePackages = lib.collectPackages (if byNameTree == null then { } else byNameTree);
+  allOutsidePackages = collectPackages (if byNameTree == null then { } else byNameTree);
 
   # 发现其它分组（排除 by-name），保留分组层级
   nestedPackages =
