@@ -27,8 +27,8 @@ stdenvNoCC.mkDerivation rec {
   ];
 
   installPhase = ''
-    install -dm755 $out/share/mbmconfig
-    7z x -y -o"$out/share/mbmconfig" "$src"
+    install -dm755 $out/share/${pname}
+    7z x -y -o"$out/share/${pname}" "$src"
     # 修正反斜杠为目录分隔符
     while IFS= read -r -d $'\0' p; do
       case "$p" in
@@ -40,9 +40,9 @@ stdenvNoCC.mkDerivation rec {
           fi
         ;;
       esac
-    done < <(find "$out/share/mbmconfig" -depth -print0)
+    done < <(find "$out/share/${pname}" -depth -print0)
 
-    chmod -R u+rwX,go+rX $out/share/mbmconfig
+    chmod -R u+rwX,go+rX $out/share/${pname}
 
     install -dm755 $out/bin
 
@@ -50,11 +50,11 @@ stdenvNoCC.mkDerivation rec {
     #!/usr/bin/env bash
     set -euo pipefail
 
-    APP_ROOT="@out@/share/mbmconfig"
+    APP_ROOT="@out@/share/${pname}"
     APP_DIR="$APP_ROOT/mBMconfig"
     BASE_DATA_DIR="$(printenv XDG_DATA_HOME)"
     [ -n "$BASE_DATA_DIR" ] || BASE_DATA_DIR="$HOME/.local/share"
-    USER_DATA="$BASE_DATA_DIR/mbmconfig"
+    USER_DATA="$BASE_DATA_DIR/${pname}"
 
     mkdir -p "$USER_DATA"
 
@@ -100,7 +100,7 @@ stdenvNoCC.mkDerivation rec {
       fi
     fi
 
-    RUNTIME_DIR=$(mktemp -d -t mbmconfig.XXXXXX)
+    RUNTIME_DIR=$(mktemp -d -t ${pname}.XXXXXX)
 
     cleanup() {
       # Sync new top-level directories back to user data
