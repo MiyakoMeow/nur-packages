@@ -58,6 +58,28 @@ stdenvNoCC.mkDerivation rec {
 
     mkdir -p "$USER_DATA"
 
+    # Repair symlinks in user data pointing to old store paths
+    for link in "$USER_DATA"/*; do
+      [ -L "$link" ] || continue
+      name="$(basename "$link")"
+      target="$(readlink -f "$link" 2>/dev/null || true)"
+      if [ -z "$target" ] || [ ! -e "$target" ]; then
+        if [ -e "$APP_DIR/$name" ]; then ln -sfT "$APP_DIR/$name" "$link"; fi
+        continue
+      fi
+      case "$target" in
+        "$APP_DIR"/*)
+          :
+          ;;
+        /nix/store/*)
+          if [ -e "$APP_DIR/$name" ]; then ln -sfT "$APP_DIR/$name" "$link"; fi
+          ;;
+        *)
+          :
+          ;;
+      esac
+    done
+
     # Initialize user data directories from app content if missing
     for dir in "$APP_DIR"/*/; do
       [ -d "$dir" ] || continue
@@ -82,8 +104,13 @@ stdenvNoCC.mkDerivation rec {
           cp -r --no-preserve=all "$d" "$USER_DATA/$name"
         fi
       done
-      # Sync top-level files back to user data
-      find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -f "{}" "$USER_DATA/" 2>/dev/null || true
+      # Sync top-level files back to user data, skip app-shipped files
+      while IFS= read -r -d $'\0' f; do
+        base="$(basename "$f")"
+        if [ ! -f "$APP_DIR/$base" ]; then
+          cp -f "$f" "$USER_DATA/" 2>/dev/null || true
+        fi
+      done < <(find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -type f -print0)
       rm -rf "$RUNTIME_DIR"
     }
     trap cleanup EXIT
