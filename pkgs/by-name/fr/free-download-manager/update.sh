@@ -4,8 +4,8 @@ set -euo pipefail
 # Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Get the latest version using the Python script
-latest_version=$(python3 "$SCRIPT_DIR/update_version.py")
+# Get the latest version using the Python script with required dependencies
+latest_version=$(nix shell nixpkgs#python312Packages.requests nixpkgs#python312Packages.beautifulsoup4 --command python3 "$SCRIPT_DIR/update_version.py")
 
 echo "Latest version found: $latest_version"
 
