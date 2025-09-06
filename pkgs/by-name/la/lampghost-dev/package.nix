@@ -12,6 +12,7 @@
   makeDesktopItem,
   autoPatchelfHook,
   nix-update-script,
+  xorg,
 }:
 
 buildGoModule (finalAttrs: rec {
@@ -45,7 +46,15 @@ buildGoModule (finalAttrs: rec {
     copyDesktopItems
   ];
 
-  buildInputs = [ webkitgtk_4_1 ];
+  buildInputs = [
+    webkitgtk_4_1
+    xorg.libX11
+    xorg.libXcursor
+    xorg.libXrandr
+    xorg.libXinerama
+    xorg.libXi
+    xorg.libXxf86vm
+  ];
 
   buildPhase = ''
     runHook preBuild
