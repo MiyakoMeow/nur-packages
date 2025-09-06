@@ -13,6 +13,7 @@
   autoPatchelfHook,
   nix-update-script,
   xorg,
+  stdenv,
 }:
 
 buildGoModule (finalAttrs: rec {
@@ -48,6 +49,8 @@ buildGoModule (finalAttrs: rec {
 
   buildInputs = [
     webkitgtk_4_1
+  ]
+  ++ lib.optionals stdenv.isLinux [
     xorg.libX11
     xorg.libXcursor
     xorg.libXrandr
@@ -99,6 +102,6 @@ buildGoModule (finalAttrs: rec {
     license = lib.licenses.asl20;
     mainProgram = "${pname}";
     maintainers = with lib.maintainers; [ ];
-    platforms = lib.platforms.linux;
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
 })
