@@ -160,6 +160,9 @@ stdenvNoCC.mkDerivation rec {
     exec "${wineWowPackages.full}/bin/wine" "mBMconfig.exe" "$@"
     EOF
     substituteInPlace $out/bin/mbmconfig --replace "@out@" "$out"
+
+    # 安装桌面文件
+    copyDesktopItems
   '';
 
   # Desktop item will be connected by consumer overlay; define here

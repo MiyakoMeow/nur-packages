@@ -156,6 +156,9 @@ stdenvNoCC.mkDerivation rec {
     exec "${wineWowPackages.full}/bin/wine" "mBMplay.exe" "$@"
     EOF
     substituteInPlace $out/bin/mbmplay --replace "@out@" "$out"
+
+    # 安装桌面文件
+    copyDesktopItems
   '';
 
   desktopItems = [

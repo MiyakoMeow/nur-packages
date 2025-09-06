@@ -155,6 +155,9 @@ stdenvNoCC.mkDerivation rec {
     exec "${wineWowPackages.full}/bin/wine" "pBMSC.exe" "$@"
     EOF
     substituteInPlace $out/bin/pbmsc --replace "@out@" "$out"
+
+    # 安装桌面文件
+    copyDesktopItems
   '';
 
   # Desktop item will be connected by consumer overlay; define here
