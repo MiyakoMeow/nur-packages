@@ -4,7 +4,6 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -184,10 +183,6 @@ def find_packages() -> Dict[str, List[Dict[str, str]]]:
 def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
     lines: List[str] = []
     lines.append("This section is auto-generated. Do not edit manually.")
-    lines.append("")
-    lines.append(
-        f"Last updated: {datetime.now(timezone.utc).isoformat(timespec='seconds')}"
-    )
     lines.append("")
 
     ordered_groups = [g for g in essential_groups_order if g in groups] + [
