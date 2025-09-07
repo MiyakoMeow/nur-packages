@@ -41,8 +41,8 @@ let
   lib = pkgs.lib;
   v = pkgs.callPackage {pkg} {{}};
   target =
-    if lib.isDerivation v then v else
-    if lib.isAttrs v && v ? meta && lib.isDerivation v.meta then v.meta else
+    if lib.isDerivation v then v
+    else if lib.isAttrs v && v ? meta && lib.isDerivation v.meta then v.meta
     else throw "not a derivation";
   getName = drv: if drv ? pname then drv.pname else lib.getName drv;
   getVersion = drv: if drv ? version then drv.version else lib.getVersion drv;
