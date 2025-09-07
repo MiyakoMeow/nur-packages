@@ -90,23 +90,6 @@ Uncomment this if you use travis:
 
 This section is auto-generated. Do not edit manually.
 
-### by-name
-
-| useable-path | version | description |
-| --- | --- | --- |
-| `beatoraja` | [0.8.8](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/be/beatoraja/package.nix) | A modern BMS Player |
-| `clang-minimal` | [19.1.7](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/cl/clang-minimal/package.nix) | C language family frontend for LLVM (wrapper script) |
-| `fcitx5-pinyin-moegirl` | [20250309](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/fc/fcitx5-pinyin-moegirl/package.nix) | Fcitx 5 pinyin dictionary generator for MediaWiki instances. Releases for dict of zh.moegirl.org.cn. (auto update) |
-| `fcitx5-pinyin-zhwiki` | [0.2.5](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/fc/fcitx5-pinyin-zhwiki/package.nix) | Fcitx 5 Pinyin Dictionary from zh.wikipedia.org (auto update) |
-| `free-download-manager` | [6.28.0.6294](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/fr/free-download-manager/package.nix) | FDM is a powerful modern download accelerator and organizer. |
-| `hn-linux-client` | [V2-64](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/hn/hn-linux-client/package.nix) | HN Linux Client, for net interface of China Telecom in HUNAN University |
-| `lampghost` | [0.3.0](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/la/lampghost/package.nix) | Offline & Cross-platform beatoraja lamp viewer and more |
-| `lampghost-dev` | [0.3.0-unstable-2025-08-23](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/la/lampghost-dev/package.nix) | Offline & Cross-platform beatoraja lamp viewer and more |
-| `mbmconfig` | [3.24.0824.0](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/mb/mbmconfig/package.nix) | mBMconfig - GUI configuration tool for mBMplay (runs via Wine) |
-| `mbmplayer` | [3.24.0824.1](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/mb/mbmplayer/package.nix) | mBMplay - BMS 播放器 (通过 Wine 运行) |
-| `pbmsc` | [3.5.5.16](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/pb/pbmsc/package.nix) | pBMSC (iBMSC Windows build) packaged to run with Wine |
-| `portaudio-java` | [0-unstable-2023-07-04](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/by-name/po/portaudio-java/package.nix) | Java wrapper for PortAudio audio library |
-
 ### grub-themes
 
 | useable-path | version | description |
@@ -226,12 +209,5 @@ This section is auto-generated. Do not edit manually.
 | `grub-themes.star-rail.tribbie_cn` | [20250815-102435](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/grub-themes/star-rail/package.nix) | Honkai: Star Rail GRUB theme (tribbie_cn) |
 | `grub-themes.star-rail.yunli` | [20250815-102435](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/grub-themes/star-rail/package.nix) | Honkai: Star Rail GRUB theme (yunli) |
 | `grub-themes.star-rail.yunli_cn` | [20250815-102435](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/grub-themes/star-rail/package.nix) | Honkai: Star Rail GRUB theme (yunli_cn) |
-| `grub-themes.suisei` | [0-unstable-2024-11-01](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/grub-themes/suisei/package.nix) | suiGRUB |
-
-### ros2
-
-| useable-path | version | description |
-| --- | --- | --- |
-| `ros2.ros-dev-tools` | [0-unstable-2025-03-13](https://github.com/MiyakoMeow/nur-packages/blob/main/pkgs/ros2/ros-dev-tools/package.nix) | ROS development tools with Docker integration |
 
 <!-- END_PACKAGE_LIST -->
