@@ -14,6 +14,8 @@
   nix-update-script,
   xorg,
   stdenv,
+  gtk4,
+  libsoup_3,
 }:
 
 buildGoModule (finalAttrs: rec {
@@ -45,11 +47,22 @@ buildGoModule (finalAttrs: rec {
     nodejs
     npmHooks.npmConfigHook
     copyDesktopItems
+    # Ensure pkg-config in strict deps setups finds webkit2gtk-4.1.pc
+    webkitgtk_4_1
+    webkitgtk_4_1.dev
+    gtk4
+    gtk4.dev
+    libsoup_3
+    libsoup_3.dev
   ];
 
   buildInputs = [
     webkitgtk_4_1
     webkitgtk_4_1.dev
+    gtk4
+    gtk4.dev
+    libsoup_3
+    libsoup_3.dev
   ]
   ++ lib.optionals stdenv.isLinux [
     xorg.libX11
@@ -62,6 +75,9 @@ buildGoModule (finalAttrs: rec {
 
   buildPhase = ''
     runHook preBuild
+
+    export PKG_CONFIG_LIBDIR="${lib.makeSearchPath "lib/pkgconfig" [ webkitgtk_4_1.dev gtk4.dev libsoup_3.dev ]}:${lib.makeSearchPath "share/pkgconfig" [ webkitgtk_4_1.dev gtk4.dev libsoup_3.dev ]}"
+    export PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR:$PKG_CONFIG_PATH"
 
     wails build -m -trimpath -devtools -tags webkit2_41 -o ${pname}
 
