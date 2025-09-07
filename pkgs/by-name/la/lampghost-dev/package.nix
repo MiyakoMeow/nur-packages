@@ -16,6 +16,9 @@
   stdenv,
   gtk4,
   libsoup_3,
+  gtk3,
+  glib-networking,
+  gsettings-desktop-schemas,
 }:
 
 buildGoModule (finalAttrs: rec {
@@ -54,6 +57,10 @@ buildGoModule (finalAttrs: rec {
     gtk4.dev
     libsoup_3
     libsoup_3.dev
+    gtk3
+    gtk3.dev
+    glib-networking
+    gsettings-desktop-schemas
   ];
 
   buildInputs = [
@@ -78,6 +85,9 @@ buildGoModule (finalAttrs: rec {
 
     export PKG_CONFIG_LIBDIR="${lib.makeSearchPath "lib/pkgconfig" [ webkitgtk_4_1.dev gtk4.dev libsoup_3.dev ]}:${lib.makeSearchPath "share/pkgconfig" [ webkitgtk_4_1.dev gtk4.dev libsoup_3.dev ]}"
     export PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR:$PKG_CONFIG_PATH"
+
+    export XDG_DATA_DIRS=${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}:$XDG_DATA_DIRS
+    export GIO_MODULE_DIR="${glib-networking}/lib/gio/modules/"
 
     wails build -m -trimpath -devtools -tags webkit2_41 -o ${pname}
 
