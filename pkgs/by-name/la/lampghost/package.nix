@@ -49,6 +49,7 @@ buildGoModule (finalAttrs: rec {
 
   buildInputs = [
     webkitgtk_4_1
+    webkitgtk_4_1.dev
   ]
   ++ lib.optionals stdenv.isLinux [
     xorg.libX11
