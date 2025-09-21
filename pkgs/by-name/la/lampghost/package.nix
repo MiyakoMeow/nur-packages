@@ -46,7 +46,6 @@ buildGoModule (finalAttrs: {
     wails
     pkg-config
     copyDesktopItems
-    glib-networking
     gsettings-desktop-schemas
     # Hooks
     autoPatchelfHook
@@ -57,6 +56,7 @@ buildGoModule (finalAttrs: {
     webkitgtk_4_1
     gtk4
     libsoup_3
+    glib-networking
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
     xorg.libX11
@@ -72,6 +72,10 @@ buildGoModule (finalAttrs: {
 
     export XDG_DATA_DIRS=${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}:$XDG_DATA_DIRS
     export GIO_MODULE_DIR="${glib-networking}/lib/gio/modules/"
+
+    mkdir -p $out/share/gsettings-schemas/${finalAttrs.pname}-${finalAttrs.version}
+    cp -r ${gsettings-desktop-schemas}/share/gsettings-schemas/* $out/share/gsettings-schemas/${finalAttrs.pname}-${finalAttrs.version}/
+    glib-compile-schemas $out/share/gsettings-schemas/${finalAttrs.pname}-${finalAttrs.version}
 
     wails build -m -trimpath -devtools -tags webkit2_41 -o lampghost
 
