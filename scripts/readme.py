@@ -207,10 +207,10 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
                     desc = child.get("description") or ""
                     homepage = child.get("homepage")
                     changelog = child.get("changelog")
-                    if homepage:
-                        desc = f"[🏠Homepage]({homepage}) {desc}"
                     if changelog:
                         desc = f"[📝Changelog]({changelog}) {desc}"
+                    if homepage:
+                        desc = f"[🏠Homepage]({homepage}) {desc}"
                     rows.append((usable, version, desc, file_rel))
                 continue
 
@@ -226,10 +226,10 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
             desc = meta.get("description") or ""
             homepage = meta.get("homepage")
             changelog = meta.get("changelog")
-            if homepage:
-                desc = f"[🏠Homepage]({homepage}) {desc}"
             if changelog:
                 desc = f"[📝Changelog]({changelog}) {desc}"
+            if homepage:
+                desc = f"[🏠Homepage]({homepage}) {desc}"
             rows.append((e["usable_path"], version, desc, file_rel))
 
         if not rows:
