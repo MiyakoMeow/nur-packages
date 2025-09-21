@@ -127,7 +127,7 @@ buildGoModule (finalAttrs: {
     changelog = "https://github.com/Catizard/lampghost/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.asl20;
     mainProgram = "lampghost";
-    maintainers = with lib.maintainers; [ MiyakoMeow ];
+    maintainers = with lib.maintainers; [ ];
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
 })
