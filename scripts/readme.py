@@ -48,7 +48,8 @@ let
   getVersion = drv: if drv ? version then drv.version else lib.getVersion drv;
   getDesc = drv: if drv ? meta && drv.meta ? description then drv.meta.description else (if drv ? description then drv.description else "");
   getHomePage = drv: if drv ? meta && drv.meta ? homepage then drv.meta.homepage else "";
-  in {{ pname = getName target; version = getVersion target; description = getDesc target; homepage = getHomePage target; }}
+  getChangelog = drv: if drv ? meta && drv.meta ? changelog then drv.meta.changelog else "";
+  in {{ pname = getName target; version = getVersion target; description = getDesc target; homepage = getHomePage target; changelog = getChangelog target; }}
 """
     ).format(repo=str(REPO_ROOT), system=system, pkg=str(package_file))
     code, out, err = run(
@@ -91,6 +92,7 @@ let
        version = if drv ? version then drv.version else lib.getVersion drv;
        description = if drv ? meta && drv.meta ? description then drv.meta.description else (if drv ? description then drv.description else "");
        homepage = if drv ? meta && drv.meta ? homepage then drv.meta.homepage else "";
+       changelog = if drv ? meta && drv.meta ? changelog then drv.meta.changelog else "";
     }};
   in map toObj names
 """
@@ -204,8 +206,11 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
                     version = child.get("version") or "-"
                     desc = child.get("description") or ""
                     homepage = child.get("homepage")
+                    changelog = child.get("changelog")
                     if homepage:
                         desc = f"[🏠Homepage]({homepage}) {desc}"
+                    if changelog:
+                        desc = f"[📝Changelog]({changelog}) {desc}"
                     rows.append((usable, version, desc, file_rel))
                 continue
 
@@ -220,8 +225,11 @@ def build_markdown(groups: Dict[str, List[Dict[str, str]]]) -> str:
             version = meta.get("version") or "-"
             desc = meta.get("description") or ""
             homepage = meta.get("homepage")
+            changelog = meta.get("changelog")
             if homepage:
                 desc = f"[🏠Homepage]({homepage}) {desc}"
+            if changelog:
+                desc = f"[📝Changelog]({changelog}) {desc}"
             rows.append((e["usable_path"], version, desc, file_rel))
 
         if not rows:
