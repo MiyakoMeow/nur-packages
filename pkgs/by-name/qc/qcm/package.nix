@@ -23,10 +23,6 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-ouKJ8yumhzdgd/haOE0a7QcvFXHs7kecSNl1H3+U/pM=";
   };
 
-  patches = [
-    ./remove_cubeb_vendor.patch
-  ];
-
   nativeBuildInputs = [
     cmake
     pkg-config
@@ -42,7 +38,7 @@ stdenv.mkDerivation (finalAttrs: {
     ffmpeg
     cubeb
   ]
-  ++ cubeb.passthru.backendLibs;
+  ++ (cubeb.passthru.backendLibs or []);
 
   # Correct qml import path
   postInstall = ''
@@ -50,7 +46,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   qtWrapperArgs = [
-    "--prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath cubeb.passthru.backendLibs}"
+    "--prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath (cubeb.passthru.backendLibs or [])}"
   ];
 
   passthru = {
