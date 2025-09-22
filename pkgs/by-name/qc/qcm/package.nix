@@ -8,18 +8,19 @@
   curl,
   ffmpeg,
   cubeb,
+  nix-update-script,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "qcm";
-  version = "1.1.2";
+  version = "1.2.0_qsql-unstable-2025-09-11";
 
   src = fetchFromGitHub {
     owner = "hypengw";
     repo = "Qcm";
-    rev = "v${finalAttrs.version}";
+    rev = "ca4e04da3ed7755c62433279ab1f05d2b8b064f6";
     fetchSubmodules = true;
-    hash = "sha256-41GsG+NKCMw+LuRUf31ilRso/SkKYVV3IrMSviOZdWs=";
+    hash = "sha256-ouKJ8yumhzdgd/haOE0a7QcvFXHs7kecSNl1H3+U/pM=";
   };
 
   patches = [
@@ -51,6 +52,14 @@ stdenv.mkDerivation (finalAttrs: {
   qtWrapperArgs = [
     "--prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath cubeb.passthru.backendLibs}"
   ];
+
+  passthru = {
+    updateScript = nix-update-script {
+      extraArgs = [
+        "--version=branch"
+      ];
+    };
+  };
 
   meta = {
     description = "Unofficial Qt client for netease cloud music";
