@@ -62,12 +62,20 @@ buildGoModule (finalAttrs: {
     glib-networking
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXrandr
-    xorg.libXinerama
-    xorg.libXi
-    xorg.libXxf86vm
+    # Core X11 libraries
+    xorg.libX11 # X11 core protocol client library
+    xorg.libXcursor # X11 cursor management library
+    xorg.libXrandr # X11 RandR extension library for screen configuration
+    xorg.libXinerama # X11 Xinerama extension for multi-monitor support
+    xorg.libXi # X11 Input extension library for input devices
+    xorg.libXxf86vm # X11 video mode extension library
+
+    # X11 clipboard and graphics extensions
+    xorg.libXfixes # X11 fixes extension for clipboard and window regions
+    xorg.libXext # X11 basic extensions library
+    xorg.libXcomposite # X11 composite extension for window composition
+    xorg.libXdamage # X11 damage extension for window damage tracking
+    xorg.libXrender # X11 rendering extension for 2D graphics
   ];
 
   buildPhase = ''
