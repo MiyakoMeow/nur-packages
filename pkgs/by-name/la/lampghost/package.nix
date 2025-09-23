@@ -9,6 +9,7 @@
   glib-networking,
   gsettings-desktop-schemas,
   xorg,
+  at-spi2-core,
   wails,
   buildGoModule,
   fetchFromGitHub,
@@ -74,6 +75,11 @@ buildGoModule (finalAttrs: {
     xorg.libXcomposite # X11 composite extension for window composition
     xorg.libXdamage # X11 damage extension for window damage tracking
     xorg.libXrender # X11 rendering extension for 2D graphics
+
+    # Additional Linux dependencies
+    xorg.xvfb # X Virtual Framebuffer for headless testing
+    xorg.xorgserver # X11 server utilities
+    at-spi2-core # AT-SPI core for accessibility
   ];
 
   buildPhase = ''
