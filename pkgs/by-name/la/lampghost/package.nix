@@ -19,6 +19,7 @@
   gtk3,
   glib-networking,
   gsettings-desktop-schemas,
+  wrapGAppsHook4,
 }:
 buildGoModule (finalAttrs: {
   pname = "lampghost";
@@ -50,6 +51,7 @@ buildGoModule (finalAttrs: {
     # Hooks
     autoPatchelfHook
     npmHooks.npmConfigHook
+    wrapGAppsHook4
   ];
 
   buildInputs = [
@@ -69,13 +71,6 @@ buildGoModule (finalAttrs: {
 
   buildPhase = ''
     runHook preBuild
-
-    export XDG_DATA_DIRS=${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}:$XDG_DATA_DIRS
-    export GIO_MODULE_DIR="${glib-networking}/lib/gio/modules/"
-
-    mkdir -p $out/share/gsettings-schemas/${finalAttrs.pname}-${finalAttrs.version}
-    cp -r ${gsettings-desktop-schemas}/share/gsettings-schemas/* $out/share/gsettings-schemas/${finalAttrs.pname}-${finalAttrs.version}/
-    glib-compile-schemas $out/share/gsettings-schemas/${finalAttrs.pname}-${finalAttrs.version}
 
     wails build -m -trimpath -devtools -tags webkit2_41 -o ${finalAttrs.pname}
 
