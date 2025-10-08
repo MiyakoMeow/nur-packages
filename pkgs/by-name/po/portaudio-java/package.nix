@@ -47,7 +47,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   # Use standard CMake phases; run Gradle after native build via postBuild hook
   postBuild = ''
-    : "${cmakeBuildDir:=build}"
+    : "${"cmakeBuildDir:=build"}"
     nativeLibDir="$PWD/native-libs"
     mkdir -p "$nativeLibDir"
     # Collect built native libraries from CMake build directory only
@@ -65,7 +65,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   # After CMake install, place built JARs into $out
   postInstall = ''
-    : "${cmakeBuildDir:=build}"
+    : "${"cmakeBuildDir:=build"}"
     sourceRoot="$NIX_BUILD_TOP/source"
     mkdir -p "$out/share/java"
     if ls "$sourceRoot"/build/libs/*.jar >/dev/null 2>&1; then
