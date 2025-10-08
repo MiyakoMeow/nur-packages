@@ -35,6 +35,10 @@ stdenv.mkDerivation (finalAttrs: {
     GRADLE_HOME = gradle;
   };
 
+  cmakeFlags = [
+    "-DCMAKE_BUILD_TYPE=Release"
+  ];
+
   postPatch = ''
     if [ -f CMakeLists.txt ]; then
       sed -i -E 's/cmake_minimum_required\s*\(\s*VERSION[^)]*\)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
