@@ -30,6 +30,17 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   buildInputs = [ portaudio ];
 
+  # Ensure CMake policy compatibility and bump minimum version in sources
+  cmakeFlags = [
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+  ];
+
+  postPatch = ''
+    if [ -f CMakeLists.txt ]; then
+      sed -i -E 's/cmake_minimum_required\s*\(\s*VERSION[^)]*\)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
+    fi
+  '';
+
 
   # Use standard CMake phases; run Gradle after native build via postBuild hook
   postBuild = ''
