@@ -30,6 +30,11 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   buildInputs = [ portaudio ];
 
+  env = {
+    JAVA_HOME = jdk.home;
+    GRADLE_HOME = gradle;
+  };
+
   postPatch = ''
     if [ -f CMakeLists.txt ]; then
       sed -i -E 's/cmake_minimum_required\s*\(\s*VERSION[^)]*\)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
