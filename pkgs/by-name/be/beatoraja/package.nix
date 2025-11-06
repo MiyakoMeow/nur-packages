@@ -10,23 +10,15 @@
   unzip,
 
   # 默认参数
-  javaPackageWithJavaFX ? (
-    pkgs.zulu.override {
-      enableJavaFX = true;
-    }
-  ),
-  # 使用 overlay 中暴露的 jportaudio，必须存在否则报错
-  portaudioJava ? pkgs.jportaudio,
+  javaPackageWithJavaFX ? pkgs.zulu.override {
+    enableJavaFX = true;
+  },
 }:
 let
-  # 检查 jportaudio 是否存在
-  _ =
-    assert pkgs ? jportaudio;
-    "jportaudio must be available via pkgs.jportaudio. Please use the personal overlay.";
-
-  # 根据 portaudioJava 设置类路径和库路径
-  portaudioClasspath = ":${portaudioJava}/share/java/*";
-  portaudioLibpath = "-Djava.library.path=${portaudioJava}/lib";
+  # 根据 jportaudio 设置类路径和库路径
+  jportaudio = pkgs.jportaudio;
+  jportaudioClassPath = ":${jportaudio}/share/java/*";
+  jportaudioLibPath = "-Djava.library.path=${jportaudio}/lib";
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "beatoraja";
@@ -52,7 +44,7 @@ stdenv.mkDerivation (finalAttrs: {
     pkgs.xorg.xrandr
     pkgs.xorg.libXrandr
     pkgs.ffmpeg
-    portaudioJava
+    jportaudio
   ];
 
   JAVA_HOME = javaPackageWithJavaFX.home;
@@ -169,8 +161,8 @@ stdenv.mkDerivation (finalAttrs: {
     "${javaPackageWithJavaFX}/bin/java" -Xms1g -Xmx4g \\
     -XX:+UseShenandoahGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
     -XX:-UsePerfData -XX:+UseThreadPriorities -XX:+ShowCodeDetailsInExceptionMessages \\
-    ${portaudioLibpath} \\
-    -cp ${finalAttrs.pname}.jar${portaudioClasspath}:ir/* \\
+    ${jportaudioLibPath} \\
+    -cp ${finalAttrs.pname}.jar${jportaudioClassPath}:ir/* \\
     bms.player.beatoraja.MainLoader "\$@"
     EOF
 
