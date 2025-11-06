@@ -10,7 +10,6 @@
   unzip,
 
   # 默认参数
-  ReplacingJarSource ? null,
   javaPackageWithJavaFX ? (
     pkgs.zulu.override {
       enableJavaFX = true;
@@ -25,16 +24,14 @@ let
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "beatoraja";
-  version = "0.8.8";
-  beatorajaVersion = "0.8.8";
 
-  srcs = [
-    (fetchurl {
-      url = "https://www.mocha-repository.info/download/beatoraja${finalAttrs.beatorajaVersion}-modernchic.zip";
-      sha256 = "sha256-yJwokOldNCUdvPtXqy1OL2ESGp446/aZBQevetGlp7Q=";
-    })
-  ]
-  ++ lib.optional (ReplacingJarSource != null) ReplacingJarSource;
+  beatorajaVersion = "0.8.8";
+  version = finalAttrs.beatorajaVersion;
+
+  src = fetchurl {
+    url = "https://www.mocha-repository.info/download/beatoraja${finalAttrs.beatorajaVersion}-modernchic.zip";
+    sha256 = "sha256-yJwokOldNCUdvPtXqy1OL2ESGp446/aZBQevetGlp7Q=";
+  };
   sourceRoot = ".";
 
   nativeBuildInputs = [
@@ -58,19 +55,13 @@ stdenv.mkDerivation (finalAttrs: {
     runHook preUnpack
 
     # 解压原始 beatoraja zip
-    unzip -qq -o "${beatorajaArchive}"
-    mv beatoraja${beatorajaVersion}-modernchic/* .
-    rmdir beatoraja${beatorajaVersion}-modernchic
-
-    # 替换为指定的 jar 文件
-    ${lib.optionalString (ReplacingJarSource != null) ''
-      rm beatoraja.jar
-      cp ${ReplacingJarSource} ${pname}.jar
-    ''}
+    unzip -qq -o $src
+    mv beatoraja${finalAttrs.beatorajaVersion}-modernchic/* .
+    rmdir beatoraja${finalAttrs.beatorajaVersion}-modernchic
 
     # 验证解压结果
-    if [ ! -f ${pname}.jar ]; then
-      echo "ERROR: ${pname}.jar not found after unpacking!"
+    if [ ! -f ${finalAttrs.pname}.jar ]; then
+      echo "ERROR: ${finalAttrs.pname}.jar not found after unpacking!"
       find . -type f
       exit 1
     fi
@@ -82,27 +73,27 @@ stdenv.mkDerivation (finalAttrs: {
     runHook preInstall
 
     # 创建标准目录结构
-    mkdir -p $out/{bin,${pname}-ori,share/beatoraja}
+    mkdir -p $out/{bin,${finalAttrs.pname}-ori,share/beatoraja}
 
     # 安全复制文件
-    find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/${pname}-ori/
-    rm $out/${pname}-ori/*.bat
-    rm $out/${pname}-ori/*.command
-    rm $out/${pname}-ori/*.dll
-    find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -I{} cp -r -- {} $out/share/${pname}/
+    find . -maxdepth 1 -type f -print0 | xargs -0 -I{} cp -- {} $out/${finalAttrs.pname}-ori/
+    rm $out/${finalAttrs.pname}-ori/*.bat
+    rm $out/${finalAttrs.pname}-ori/*.command
+    rm $out/${finalAttrs.pname}-ori/*.dll
+    find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -I{} cp -r -- {} $out/share/${finalAttrs.pname}/
 
     # 创建启动脚本
-    cat > $out/bin/${pname} <<EOF
+    cat > $out/bin/${finalAttrs.pname} <<EOF
     #!${stdenv.shell}
     export JAVA_HOME="${javaPackageWithJavaFX.home}"
     export _JAVA_OPTIONS='-Dsun.java2d.opengl=true -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel'
 
     # 用户数据目录配置
-    USER_DATA_DIR="\$HOME/.local/share/${pname}"
+    USER_DATA_DIR="\$HOME/.local/share/${finalAttrs.pname}"
     mkdir -p "\$USER_DATA_DIR"
 
     # 初始化用户目录结构
-    for dir in $out/share/${pname}/*/; do
+    for dir in $out/share/${finalAttrs.pname}/*/; do
       dir_name=\$(basename "\$dir")
       target_dir="\$USER_DATA_DIR/\$dir_name"
 
@@ -113,7 +104,7 @@ stdenv.mkDerivation (finalAttrs: {
     done
 
     # 创建临时运行环境
-    RUNTIME_DIR=\$(mktemp -d -t ${pname}.XXX)
+    RUNTIME_DIR=\$(mktemp -d -t ${finalAttrs.pname}.XXX)
 
     # 文件同步逻辑
     config_files=(
@@ -159,7 +150,7 @@ stdenv.mkDerivation (finalAttrs: {
     trap cleanup EXIT
 
     # 链接必要文件
-    ln -sf $out/${pname}-ori/${pname}.jar "\$RUNTIME_DIR/"
+    ln -sf $out/${finalAttrs.pname}-ori/${finalAttrs.pname}.jar "\$RUNTIME_DIR/"
 
     # 创建符号链接到用户目录
     for dir in "\$USER_DATA_DIR"/*/; do
@@ -173,12 +164,12 @@ stdenv.mkDerivation (finalAttrs: {
     -XX:+UseShenandoahGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
     -XX:-UsePerfData -XX:+UseThreadPriorities -XX:+ShowCodeDetailsInExceptionMessages \\
     ${portaudioLibpath} \\
-    -cp ${pname}.jar${portaudioClasspath}:ir/* \\
+    -cp ${finalAttrs.pname}.jar${portaudioClasspath}:ir/* \\
     bms.player.beatoraja.MainLoader "\$@"
     EOF
 
     # 设置脚本执行权限
-    chmod +x $out/bin/${pname}
+    chmod +x $out/bin/${finalAttrs.pname}
 
     # 安装桌面文件
     copyDesktopItems
@@ -188,10 +179,10 @@ stdenv.mkDerivation (finalAttrs: {
 
   desktopItems = [
     (makeDesktopItem {
-      name = pname;
-      desktopName = pname;
-      exec = pname;
-      comment = meta.description;
+      name = finalAttrs.pname;
+      desktopName = finalAttrs.pname;
+      exec = finalAttrs.pname;
+      comment = finalAttrs.meta.description;
       mimeTypes = [ "application/java" ];
       categories = [ "Game" ];
       terminal = false;
@@ -202,6 +193,6 @@ stdenv.mkDerivation (finalAttrs: {
     description = "A modern BMS Player";
     homepage = "https://www.mocha-repository.info/download.php";
     license = licenses.gpl3;
-    mainProgram = pname;
+    mainProgram = finalAttrs.pname;
   };
 })
