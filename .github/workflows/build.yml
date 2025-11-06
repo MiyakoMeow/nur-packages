@@ -12,7 +12,78 @@ on:
     - cron: "20 12 * * *"
   workflow_dispatch:
 jobs:
+  # 新增：专门用于缓存依赖的 job
+  cache-dependencies:
+    strategy:
+      matrix:
+        # Set this to notify the global nur package registry that changes are
+        # available.
+        #
+        # The repo name as used in
+        # https://github.com/nix-community/NUR/blob/master/repos.json
+        nurRepo:
+          - MiyakoMeow/nur-packages
+        # Set this to cache your build results in cachix for faster builds
+        # in CI and for everyone who uses your cache.
+        #
+        # Format: Your cachix cache host name without the ".cachix.org" suffix.
+        # Example: mycache (for mycache.cachix.org)
+        #
+        # For this to work, you also need to set the CACHIX_SIGNING_KEY or
+        # CACHIX_AUTH_TOKEN secret in your repository secrets settings in
+        # Github found at
+        # https://github.com/<your_githubname>/nur-packages/settings/secrets
+        cachixName:
+          - miyakomeow
+        nixPath:
+          - nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixpkgs-unstable.tar.gz
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: "${{ matrix.nixPath }}"
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            extra-platforms = aarch64-linux
+
+      - name: Setup cachix for dependencies
+        uses: cachix/cachix-action@v16
+        if: ${{ github.event_name != 'pull_request' && matrix.cachixName != '<YOUR_CACHIX_NAME>' }}
+        with:
+          name: ${{ matrix.cachixName }}
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Build and cache dependencies only
+        run: |
+          # 创建专门的依赖推导并构建
+          nix eval .#packages.x86_64-linux --apply 'pkgs: let
+            inherit (pkgs) stdenv;
+          in stdenv.mkDerivation {
+            name = "nur-dependencies";
+            # 获取所有包的构建依赖
+            buildInputs = builtins.attrValues (pkgs // { inherit stdenv; });
+            phases = [ "buildPhase" ];
+            buildPhase = "mkdir -p $out";
+            dontUnpack = true;
+            dontConfigure = true;
+            dontBuild = true;
+            dontFixup = true;
+          }' --raw > dependency-derivation.nix
+          
+          # 构建依赖推导
+          nix-build dependency-derivation.nix
+          
+          # 推送依赖到缓存
+          nix-store -qR --include-outputs $(nix-instantiate dependency-derivation.nix) | cachix push ${{ matrix.cachixName }}
+
   tests:
+    needs: cache-dependencies  # 依赖缓存完成后执行
     strategy:
       matrix:
         # Set this to notify the global nur package registry that changes are
@@ -53,12 +124,16 @@ jobs:
       - name: Show nixpkgs version
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
-      - name: Setup cachix
+      - name: Setup cachix (read-only)
         uses: cachix/cachix-action@v16
+        # 关键修改：在 PR 和普通构建中都使用，但设置为只读
         # Don't replace <YOUR_CACHIX_NAME> here!
-        if: ${{ github.event_name != 'pull_request' && matrix.cachixName != '<YOUR_CACHIX_NAME>' }}
+        if: ${{ matrix.cachixName != '<YOUR_CACHIX_NAME>' }}
         with:
           name: ${{ matrix.cachixName }}
+          # 关键：关闭推送，只从缓存读取
+          push: false
+          # 仍然需要认证来读取私有缓存（如果有的话）
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
@@ -70,10 +145,12 @@ jobs:
             -I nixpkgs=$(nix-instantiate --find-file nixpkgs) \
             -I $PWD
 
-      - name: Build nix packages
-        run: nix shell -f '<nixpkgs>' nix-build-uncached -c nix-build-uncached ci.nix -A cacheOutputs
+      - name: Build nix packages (no cache push)
+        run: |
+          # 构建但不主动推送缓存
+          nix shell -f '<nixpkgs>' nix-build-uncached -c nix-build-uncached ci.nix -A cacheOutputs
+          echo "构建完成，最终产物不会上传到 Cachix"
 
       - name: Trigger NUR update
-        # Don't replace <YOUR_REPO_NAME> here!
         if: ${{ matrix.nurRepo != '<YOUR_REPO_NAME>' && false }}
         run: curl -XPOST "https://nur-update.nix-community.org/update?repo=${{ matrix.nurRepo }}"
