@@ -10,7 +10,7 @@
   unzip,
 
   # 默认参数
-  javaPackageWithJavaFX ? pkgs.zulu.override {
+  javaPackageWithJavaFX ? pkgs.jdk23.override {
     enableJavaFX = true;
   },
   # 可选：传入 derivation 来覆盖 pname、version、meta，并从中获取 jar 文件
