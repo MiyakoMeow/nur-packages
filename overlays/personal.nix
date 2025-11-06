@@ -3,4 +3,5 @@
 self: super: {
   # 暴露 jportaudio，使其可以通过 pkgs.jportaudio 访问
   jportaudio = super.callPackage ../pkgs/by-name/jp/jportaudio/package.nix { };
+  beatoraja = super.callPackage ../pkgs/by-name/be/beatoraja/package.nix { };
 }

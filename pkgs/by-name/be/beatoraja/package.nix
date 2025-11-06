@@ -13,6 +13,9 @@
   javaPackageWithJavaFX ? pkgs.zulu.override {
     enableJavaFX = true;
   },
+  # 可选：传入 derivation 来覆盖 pname、version、meta，并从中获取 jar 文件
+  # 如果提供，将使用该 derivation 的 pname、version、meta，并复制其 jar 文件到输出目录
+  overrideDerivation ? null,
 }:
 let
   # 根据 jportaudio 设置类路径和库路径
@@ -21,10 +24,11 @@ let
   jportaudioLibPath = "-Djava.library.path=${jportaudio}/lib";
 in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "beatoraja";
+  pname = if overrideDerivation != null then overrideDerivation.pname else "beatoraja";
 
   beatorajaVersion = "0.8.8";
-  version = finalAttrs.beatorajaVersion;
+  version =
+    if overrideDerivation != null then overrideDerivation.version else finalAttrs.beatorajaVersion;
 
   src = fetchurl {
     url = "https://www.mocha-repository.info/download/beatoraja${finalAttrs.beatorajaVersion}-modernchic.zip";
@@ -56,6 +60,19 @@ stdenv.mkDerivation (finalAttrs: {
     unzip -qq -o $src
     mv beatoraja${finalAttrs.beatorajaVersion}-modernchic/* .
     rmdir beatoraja${finalAttrs.beatorajaVersion}-modernchic
+
+    # 如果提供了 overrideDerivation，复制其 jar 文件
+    ${
+      if overrideDerivation != null then
+        ''
+          # 查找 overrideDerivation 输出中的 jar 文件并复制
+          find ${overrideDerivation} -name "*.jar" -type f | while read jar; do
+            cp "$jar" .
+          done
+        ''
+      else
+        ""
+    }
 
     # 验证解压结果
     if [ ! -f ${finalAttrs.pname}.jar ]; then
@@ -187,10 +204,14 @@ stdenv.mkDerivation (finalAttrs: {
     })
   ];
 
-  meta = with lib; {
-    description = "A modern BMS Player";
-    homepage = "https://www.mocha-repository.info/download.php";
-    license = licenses.gpl3;
-    mainProgram = finalAttrs.pname;
-  };
+  meta =
+    if overrideDerivation != null then
+      overrideDerivation.meta
+    else
+      (with lib; {
+        description = "A modern BMS Player";
+        homepage = "https://www.mocha-repository.info/download.php";
+        license = licenses.gpl3;
+        mainProgram = finalAttrs.pname;
+      });
 })
