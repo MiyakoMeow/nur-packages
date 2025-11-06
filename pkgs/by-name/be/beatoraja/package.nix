@@ -15,12 +15,18 @@
       enableJavaFX = true;
     }
   ),
-  portaudioJava ? pkgs.callPackage ../../jp/jportaudio/package.nix { },
+  # 使用 overlay 中暴露的 jportaudio，必须存在否则报错
+  portaudioJava ? pkgs.jportaudio,
 }:
 let
-  # 根据 portaudioJava 是否存在设置类路径和库路径
-  portaudioClasspath = if portaudioJava != null then ":${portaudioJava}/share/java/*" else "";
-  portaudioLibpath = if portaudioJava != null then "-Djava.library.path=${portaudioJava}/lib" else "";
+  # 检查 jportaudio 是否存在
+  _ =
+    assert pkgs ? jportaudio;
+    "jportaudio must be available via pkgs.jportaudio. Please use the personal overlay.";
+
+  # 根据 portaudioJava 设置类路径和库路径
+  portaudioClasspath = ":${portaudioJava}/share/java/*";
+  portaudioLibpath = "-Djava.library.path=${portaudioJava}/lib";
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "beatoraja";
@@ -46,8 +52,8 @@ stdenv.mkDerivation (finalAttrs: {
     pkgs.xorg.xrandr
     pkgs.xorg.libXrandr
     pkgs.ffmpeg
-  ]
-  ++ lib.optional (portaudioJava != null) portaudioJava;
+    portaudioJava
+  ];
 
   JAVA_HOME = javaPackageWithJavaFX.home;
 
