@@ -98,7 +98,7 @@ jobs:
 
           echo "执行包 ${{ matrix.package }} 的更新命令（通过 helper 脚本）"
           # 调用之前提取好的 helper 脚本来执行 updateScript 的命令逻辑
-          bash scripts/update-packages/execute-update-command.sh "${{ matrix.package }}"
+          bash scripts/update-packages/execute-update-script.sh "${{ matrix.package }}"
 
           # 恢复原始 HOME 并清理临时目录
           export TEMP_HOME="$HOME"
