@@ -73,7 +73,7 @@ jobs:
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
         run: |
           PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          scripts/ci/wait-for-actions.sh "$PR_NUMBER"
+          scripts/actions/wait-for-actions.sh "$PR_NUMBER"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
