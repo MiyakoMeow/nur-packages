@@ -20,6 +20,10 @@ jobs:
             substituters = https://miyakomeow.cachix.org/ https://nix-community.cachix.org/ https://cache.nixos.org/
             trusted-public-keys = miyakomeow.cachix.org-1:85k7pjjK1Voo+kMHJx8w3nT1rlBow3+4/M+LsAuMCRY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
+      - name: Install required tools
+        run: |
+          nix profile install nixpkgs#git nixpkgs#python3 nixpkgs#gh nixpkgs#jq
+
       - name: Update flake.lock
         if: ${{ github.event_name != 'pull_request' }}
         id: create-pull-request
@@ -80,8 +84,9 @@ jobs:
 
       - name: Enable Pull Request Automerge
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.AUTOMERGE_TOKEN }}
-          pull-request-number: ${{ needs.lockfile.outputs.pr_number }}
-          merge-method: squash
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+        run: |
+          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
+          echo "Enabling auto-merge for PR #$PR_NUMBER"
+          gh pr merge "$PR_NUMBER" --auto --squash
