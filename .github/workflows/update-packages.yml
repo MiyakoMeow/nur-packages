@@ -339,7 +339,6 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: ${{ steps.update.outputs.branch_name }}
-          base: main
           commit-message: "updateScript: 自动更新包 ${{ matrix.package }}"
           title: "Auto Update(updateScript): ${{ matrix.package }}"
           body: |
