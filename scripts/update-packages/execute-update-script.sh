@@ -35,11 +35,6 @@ export NIXPKGS_ALLOW_INSECURE=1
 
 echo "NIX_PATH=$NIX_PATH"
 
-# 创建唯一分支名（可根据 group 优化命名，但此处保持兼容）
-timestamp=$(date +%s)
-branch_name="update/$PACKAGE-$timestamp"
-echo "分支名称: $branch_name"
-
 # 使用临时HOME目录以防脚本写入HOME
 export ORI_HOME="$HOME"
 export HOME=$(mktemp -d)
@@ -147,7 +142,6 @@ rm -rf "$TEMP_HOME"
 # 检查是否有需要提交的更改（不在此处提交，交由后续PR步骤）
 if [ -n "$(git status --porcelain)" ]; then
     append_github_output "has_update" "true"
-    append_github_output "branch_name" "$branch_name"
     echo "更新完成: $PACKAGE"
 else
     append_github_output "has_update" "false"

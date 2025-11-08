@@ -76,12 +76,31 @@ jobs:
         run: |
           bash scripts/update-packages/execute-update-script.sh "${{ matrix.package }}"
 
+      - name: Generate branch name
+        id: gen-branch-name
+        shell: bash
+        run: |
+          # Helper: 向 GitHub Actions 的 $GITHUB_OUTPUT 追加输出（本地调试时退回到 stdout）
+          append_github_output() {
+            # $1 = key, $2 = value
+            if [ -n "${GITHUB_OUTPUT:-}" ]; then
+              printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"
+            else
+              printf '%s=%s\n' "$1" "$2"
+            fi
+          }
+          # 创建唯一分支名（可根据 group 优化命名，但此处保持兼容）
+          timestamp=$(date +%s)
+          branch_name="update/$PACKAGE-$timestamp"
+          append_github_output "branch_name" "$branch_name"
+          echo "分支名称: $branch_name"
+
       - name: Create Pull Request
         if: steps.update.outputs.has_update == 'true'
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: ${{ steps.update.outputs.branch_name }}
+          branch: ${{ steps.gen-branch-name.outputs.branch_name }}
           commit-message: "${{ matrix.package }}: auto-update by updateScript"
           title: "Auto Update(updateScript): ${{ matrix.package }}"
           body: |
