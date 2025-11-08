@@ -102,7 +102,7 @@ jobs:
         with:
           branch: ${{ steps.gen-branch-name.outputs.branch_name }}
           commit-message: "${{ matrix.package }}: auto-update by updateScript"
-          title: "Auto Update(updateScript): ${{ matrix.package }}"
+          title: "${{ matrix.package }}: auto-update by updateScript"
           body: |
             由GitHub Actions自动更新包 ${{ matrix.package }}
 
