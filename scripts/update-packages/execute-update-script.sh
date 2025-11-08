@@ -1,89 +1,158 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# execute-update-command.sh
-#
-# Extracted from the `update-package` workflow step.
-#
-# Purpose:
-#   Normalize and execute an update command that was originally provided
-#   by a package's `updateScript` (from nixpkgs). The original logic
-#   special-cased `nix-update` invocations so we replicate that behavior:
-#     - Normalize store-path nix-update to plain "nix-update"
-#     - Preserve flag-style arguments (starting with '-' or containing '=')
-#     - Ensure a `--flake` flag is present (add it if missing)
-#     - Append the full attribute path (package) as the last positional argument
+# execute-update-script.sh
 #
 # Usage:
-#   execute-update-command.sh <package-attr-path> -- <command> [args...]
+#   execute-update-script.sh <package-attr-path> [-- <command> [args...]]
 #
-# Examples:
-#   execute-update-command.sh nixpkgs.foo.bar -- nix-update --some-flag
-#   execute-update-command.sh mypkg -- /nix/store/abcd.../bin/nix-update --foo=bar
-#   execute-update-command.sh mypkg -- python3 update.py arg1 arg2
+# If a command is provided after "--", the script will execute that command.
+# Otherwise it will attempt to fetch the package's `updateScript` via `nix eval`
+# and execute it. Supports updateScript forms:
+#   - string
+#   - array
+#   - object with "command" (string or array)
 #
-# Notes:
-#  - The script expects the caller to split a command string into argv; it
-#    does not parse JSON. This matches how the original function received
-#    the command array in the workflow (via Bash arrays).
-#  - The environment should already have any required tools installed
-#    (e.g. nix-update, python, etc.). The workflow installs dependencies earlier.
-#  - If the command is `nix-update` (or a store path ending in /bin/nix-update),
-#    the script will rebuild the invocation as described above.
+# Special handling for `nix-update`:
+#   - Normalize store-path nix-update (/nix/store/.../bin/nix-update) to "nix-update"
+#   - Preserve flag-like args (starting with '-' or containing '=')
+#   - Ensure `--flake` is present (add if missing)
+#   - Append the package attribute path as the last positional argument
+#
+# Dependencies: `nix`, `jq` present in PATH (workflow installs these before calling).
 #
 # Exit codes:
-#  - Exit status is the same as the executed command.
-#  - The script exits with non-zero for usage errors.
+#   0 - executed command finished successfully
+#   2 - usage / missing args / invalid updateScript format
+#   3 - nix eval failed to fetch updateScript
 
-if [ "$#" -lt 3 ]; then
-  cat >&2 <<EOF
-Usage: $0 <package-attr-path> -- <command> [args...]
-Example: $0 mypkg -- nix-update --flake --no-edit
+usage() {
+  cat <<EOF >&2
+Usage: $0 <package-attr-path> [-- <command> [args...]]
+Examples:
+  $0 mypkg
+  $0 mypkg -- nix-update --no-edit
 EOF
   exit 2
+}
+
+if [ "$#" -lt 1 ]; then
+  usage
 fi
 
 PACKAGE="$1"
-shift
+shift || true
 
-# Expect a literal separator "--"
-if [ "$1" != "--" ]; then
-  echo "Missing '--' separator before command arguments" >&2
-  echo "Usage: $0 <package-attr-path> -- <command> [args...]" >&2
-  exit 2
-fi
-shift
-
-# Remaining args form the command array
-if [ "$#" -lt 1 ]; then
-  echo "No command specified" >&2
-  exit 2
-fi
-
-# Convert remaining positional args into an array
-declare -a script_array=()
-while [ "$#" -gt 0 ]; do
-  script_array+=("$1")
+# If caller provided "-- <command...>" then we use explicit command
+if [ "$#" -ge 1 ]; then
+  if [ "$1" != "--" ]; then
+    usage
+  fi
   shift
-done
+  if [ "$#" -lt 1 ]; then
+    echo "No command specified after --" >&2
+    usage
+  fi
 
+  # Build command array from remaining args
+  declare -a script_array=()
+  while [ "$#" -gt 0 ]; do
+    script_array+=("$1")
+    shift
+  done
+
+else
+  # No explicit command provided: fetch updateScript via nix
+  # Ensure FLAKE_REF fallback
+  : "${FLAKE_REF:=path:${GITHUB_WORKSPACE:-$PWD}}"
+
+  # Attempt to read updateScript from the flake's legacyPackages
+  set +e
+  script_json=$(nix eval --impure --json --expr "
+    let
+      f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
+      sys = \"x86_64-linux\";
+      lp = builtins.getAttr sys f.legacyPackages;
+      pkgsN = import <nixpkgs> {};
+      lib = pkgsN.lib;
+      path = lib.strings.splitString \".\" \"${PACKAGE}\";
+      pkg = lib.attrsets.attrByPath path null lp;
+    in
+      if pkg == null then throw \"no pkg\"
+      else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
+      else if (pkg ? updateScript) then pkg.updateScript
+      else throw \"no updateScript\"
+  " 2>&1)
+  ret=$?
+  set -e
+
+  if [ $ret -ne 0 ]; then
+    echo "Failed to fetch updateScript for ${PACKAGE} (nix eval exit ${ret})" >&2
+    echo "nix eval output:" >&2
+    echo "$script_json" >&2
+    exit 3
+  fi
+
+  # Determine type
+  script_type=$(echo "$script_json" | jq -r 'type' 2>/dev/null || echo "null")
+
+  # Convert script_json to bash array in script_array
+  case "$script_type" in
+    array)
+      # each element is a string element of command
+      mapfile -t script_array < <(echo "$script_json" | jq -r '.[]')
+      ;;
+    string)
+      # split string into words (like original behavior)
+      command_str=$(echo "$script_json" | jq -r '.')
+      # shell-splitting: preserve sane splitting; avoid word-splitting surprises by using read -a
+      read -r -a script_array <<< "$command_str"
+      ;;
+    object)
+      # require "command" field
+      if echo "$script_json" | jq -e 'has("command")' >/dev/null 2>&1; then
+        cmdtype=$(echo "$script_json" | jq -r '.command | type')
+        if [ "$cmdtype" = "array" ]; then
+          mapfile -t script_array < <(echo "$script_json" | jq -r '.command[]')
+        elif [ "$cmdtype" = "string" ]; then
+          command_str=$(echo "$script_json" | jq -r '.command')
+          read -r -a script_array <<< "$command_str"
+        else
+          echo "Unsupported command type in updateScript object: $cmdtype" >&2
+          exit 2
+        fi
+      else
+        echo "updateScript object for ${PACKAGE} does not contain a 'command' field" >&2
+        exit 2
+      fi
+      ;;
+    *)
+      echo "Unsupported updateScript type: ${script_type}" >&2
+      echo "Raw updateScript JSON: $script_json" >&2
+      exit 2
+      ;;
+  esac
+fi
+
+# At this point we must have script_array assembled
+if [ "${#script_array[@]}" -eq 0 ]; then
+  echo "No command to execute for package ${PACKAGE}" >&2
+  exit 2
+fi
+
+# Normalize store-path nix-update (/nix/store/.../bin/nix-update) to "nix-update"
 cmd="${script_array[0]}"
-
-# Detect store-path nix-update: "/nix/store/.../bin/nix-update"
 if [[ "$cmd" =~ ^/nix/store/.*/bin/nix-update$ ]]; then
-  # Normalize to "nix-update"
   script_array[0]="nix-update"
   cmd="nix-update"
 fi
 
-# If the command is nix-update, rewrite invocation
 if [ "$cmd" = "nix-update" ]; then
-  new_command=("nix-update")
+  # Rebuild nix-update invocation:
+  new_command=( "nix-update" )
   has_flake=0
 
-  # Preserve flags (starting with '-' or containing '='); drop positional args.
-  # Also detect explicit --flake presence.
-  for ((i=1; i<${#script_array[@]}; i++)); do
+  for ((i=1;i<${#script_array[@]};i++)); do
     arg="${script_array[$i]}"
     if [ "$arg" = "--flake" ]; then
       has_flake=1
@@ -94,15 +163,16 @@ if [ "$cmd" = "nix-update" ]; then
   done
 
   if [ "$has_flake" -eq 0 ]; then
-    new_command+=("--flake")
+    new_command+=( "--flake" )
   fi
 
-  new_command+=("$PACKAGE")
+  # append full package attribute path
+  new_command+=( "$PACKAGE" )
 
   echo "Normalized nix-update invocation: ${new_command[*]}"
   exec "${new_command[@]}"
 else
-  # Non-nix-update command: execute as-is
+  # Execute the command as-is
   echo "Executing command: ${script_array[*]}"
   exec "${script_array[@]}"
 fi
