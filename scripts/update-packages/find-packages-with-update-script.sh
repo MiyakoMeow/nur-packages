@@ -26,7 +26,8 @@ append_github_output() {
     printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"
   else
     # 回退：打印到 stdout (旧式)
-    printf '::set-output name=%s::%s\n' "$1" "$2"
+    # 为了简化，这里直接输出 key=value 到 stdout
+    printf '%s=%s\n' "$1" "$2"
   fi
 }
 
@@ -72,12 +73,11 @@ nix eval --impure --json --expr "
 # 初始化 package list
 : > "$PACKAGE_LIST_FILE"
 
-declare -A unique_groups
-declare -A unique_commands
+# 不再使用 unique_groups/unique_commands 去重 —— 保留所有具有 updateScript 的包
 
 # 遍历所有候选包，提取 updateScript 并按规则去重
 while IFS= read -r pkg; do
-  # 尝试获取 updateScript（允许失败并跳过）
+  # 尝试获取 updateScript（如果失败也不要盲目跳过，改为包含包以避免遗漏）
   set +e
   script_output=$(nix eval --impure --json --expr "
     let
@@ -98,74 +98,19 @@ while IFS= read -r pkg; do
   set -e
 
   if [ $ret -ne 0 ]; then
-    # 没有 updateScript 或解析失败，跳过
+    # 无法读取 updateScript（可能为解析错误或其它原因），仍将包包含在列表中以避免遗漏
+    echo "警告: 无法读取 ${pkg} 的 updateScript，包含在更新列表中"
+    echo "$pkg" >> "$PACKAGE_LIST_FILE"
+    # 跳到下一个包
     continue
   fi
 
-  # 判断类型并规范化为 command 指纹或 group
-  script_type=$(echo "$script_output" | jq -r 'type')
-  group_name=""
-  command_fingerprint=""
-
-  case "$script_type" in
-    "array")
-      # 数组类型：转为排序后的 JSON 表示以便去重
-      command_fingerprint=$(echo "$script_output" | jq -c 'sort')
-      ;;
-    "string")
-      # 字符串类型：转为单元素数组并排序
-      command_fingerprint=$(echo "$script_output" | jq -c '[.] | sort')
-      ;;
-    "object")
-      # 如果存在 group 字段则优先使用 group 去重
-      if echo "$script_output" | jq -e 'has(\"group\")' >/dev/null 2>&1; then
-        group_name=$(echo "$script_output" | jq -r '.group')
-      fi
-
-      # 如果未提供 group，则回退为属性路径的上级前缀（去掉最后一段）
-      if [ -z "$group_name" ]; then
-        if [[ "$pkg" == *.* ]]; then
-          group_name=${pkg%.*}
-        fi
-      fi
-
-      if echo "$script_output" | jq -e 'has(\"command\")' >/dev/null 2>&1; then
-        command_type=$(echo "$script_output" | jq -r '.command | type')
-        if [ "$command_type" = "array" ]; then
-          command_fingerprint=$(echo "$script_output" | jq -c '.command | sort')
-        elif [ "$command_type" = "string" ]; then
-          command_fingerprint=$(echo "$script_output" | jq -c '.command | [.] | sort')
-        fi
-      fi
-      ;;
-    *)
-      echo "跳过包 $pkg (未知的 updateScript 类型: $script_type)"
-      continue
-      ;;
-  esac
-
-  # 如果既没有 group 也没有 command，可以跳过
-  if [ -z "$group_name" ] && [ -z "$command_fingerprint" ]; then
-    echo "跳过包 $pkg (不支持的 updateScript 格式)"
-    continue
-  fi
-
-  if [ -n "$group_name" ]; then
-    # 基于 group 去重
-    if [[ -z "${unique_groups[$group_name]:-}" ]]; then
-      unique_groups["$group_name"]=1
-      echo "$pkg" >> "$PACKAGE_LIST_FILE"
-    else
-      echo "跳过包 $pkg (同组已收录: $group_name)"
-    fi
+  # 简化逻辑：只要成功读取到了 updateScript 就包含该包（不再按 group/command 去重）
+  # 这样可以保证像 free-download-manager 和 lampghost-dev 这样的包不会被误跳过。
+  if ! grep -Fxq "$pkg" "$PACKAGE_LIST_FILE"; then
+    echo "$pkg" >> "$PACKAGE_LIST_FILE"
   else
-    # 基于 command 指纹去重
-    if [[ -z "${unique_commands[$command_fingerprint]:-}" ]]; then
-      unique_commands["$command_fingerprint"]=1
-      echo "$pkg" >> "$PACKAGE_LIST_FILE"
-    else
-      echo "跳过包 $pkg (重复命令)"
-    fi
+    echo "包 $pkg 已在列表中，跳过重复添加"
   fi
 
 done < "$ALL_PACKAGES_FILE"
@@ -175,7 +120,7 @@ echo "找到 ${PACKAGE_COUNT} 个需要更新的条目:"
 cat "$PACKAGE_LIST_FILE"
 
 # 输出到 GitHub Actions 输出变量
-package_list_json=$(cat "$PACKAGE_LIST_FILE" | jq -R -s -c 'split(\"\\n\") | map(select(. != \"\"))')
+package_list_json=$(cat "$PACKAGE_LIST_FILE" | jq -R -s -c 'split("\n") | map(select(. != ""))')
 append_github_output "package_list" "$package_list_json"
 append_github_output "package_count" "$PACKAGE_COUNT"
 
