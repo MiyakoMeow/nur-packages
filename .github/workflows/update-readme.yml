@@ -60,7 +60,6 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: ${{ steps.update.outputs.branch_name }}
-          base: main
           commit-message: "docs(readme): update package list"
           title: "Docs: Update README package list"
           body: |
