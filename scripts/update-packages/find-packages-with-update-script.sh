@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# find-packages.sh
+# find-packages-with-update-script.sh
 # 从 flake 的 legacyPackages 中查找具有 updateScript 的包并去重（优先按 group）
 #
 # 输出:
@@ -10,7 +10,7 @@ set -euo pipefail
 #   package_count: 要更新的条目数
 #
 # 使用示例（在 workflow step 的 run 中）:
-#   bash scripts/update-packages/find-packages.sh
+#   bash scripts/update-packages/find-packages-with-update-script.sh
 #
 # 要求:
 # - 在 GitHub Actions 中运行时, 默认环境变量 GITHUB_WORKSPACE 与 GITHUB_OUTPUT 可用
@@ -25,7 +25,7 @@ append_github_output() {
     # GitHub Actions 符合规范的输出方式（新式）
     printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"
   else
-    # 回退：打印到 stdout
+    # 回退：打印到 stdout (旧式)
     printf '::set-output name=%s::%s\n' "$1" "$2"
   fi
 }
@@ -60,7 +60,7 @@ nix eval --impure --json --expr "
     hasUS = pkg: (pkg ? passthru && pkg.passthru ? updateScript) || (pkg ? updateScript);
     collect = attrs: path:
       lib.concatMap (name:
-        let v = attrs.${name}; p = path ++ [ name ]; in
+        let v = attrs.\${name}; p = path ++ [ name ]; in
         if lib.isDerivation v then
           if hasUS v then [ (lib.concatStringsSep \".\" p) ] else []
         else if lib.isAttrs v then collect v p
@@ -118,7 +118,7 @@ while IFS= read -r pkg; do
       ;;
     "object")
       # 如果存在 group 字段则优先使用 group 去重
-      if echo "$script_output" | jq -e 'has("group")' >/dev/null 2>&1; then
+      if echo "$script_output" | jq -e 'has(\"group\")' >/dev/null 2>&1; then
         group_name=$(echo "$script_output" | jq -r '.group')
       fi
 
@@ -129,7 +129,7 @@ while IFS= read -r pkg; do
         fi
       fi
 
-      if echo "$script_output" | jq -e 'has("command")' >/dev/null 2>&1; then
+      if echo "$script_output" | jq -e 'has(\"command\")' >/dev/null 2>&1; then
         command_type=$(echo "$script_output" | jq -r '.command | type')
         if [ "$command_type" = "array" ]; then
           command_fingerprint=$(echo "$script_output" | jq -c '.command | sort')
@@ -175,7 +175,7 @@ echo "找到 ${PACKAGE_COUNT} 个需要更新的条目:"
 cat "$PACKAGE_LIST_FILE"
 
 # 输出到 GitHub Actions 输出变量
-package_list_json=$(cat "$PACKAGE_LIST_FILE" | jq -R -s -c 'split("\n") | map(select(. != ""))')
+package_list_json=$(cat "$PACKAGE_LIST_FILE" | jq -R -s -c 'split(\"\\n\") | map(select(. != \"\"))')
 append_github_output "package_list" "$package_list_json"
 append_github_output "package_count" "$PACKAGE_COUNT"
 
