@@ -179,7 +179,7 @@ stdenv.mkDerivation (finalAttrs: {
     # 运行游戏
     cd "\$RUNTIME_DIR"
     "${javaPackageWithJavaFX}/bin/java" -Xms1g -Xmx4g \\
-    -XX:+UseShenandoahGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
+    -XX:+UseZGC -XX:+ExplicitGCInvokesConcurrent -XX:+TieredCompilation -XX:+UseNUMA -XX:+AlwaysPreTouch \\
     -XX:-UsePerfData -XX:+UseThreadPriorities -XX:+ShowCodeDetailsInExceptionMessages \\
     ${jportaudioLibPath} \\
     -cp ${finalAttrs.pname}.jar${jportaudioClassPath}:ir/* \\
