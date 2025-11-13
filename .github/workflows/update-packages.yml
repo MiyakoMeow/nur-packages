@@ -109,7 +109,7 @@ jobs:
 
             此更新由包的updateScript自动生成
           labels: automated, dependencies
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
 
       - name: Wait for CI completion
         if: steps.create-pull-request.outputs.pull-request-operation == 'created'

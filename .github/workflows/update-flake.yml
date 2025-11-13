@@ -45,7 +45,7 @@ jobs:
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
           commit-message: "flake.lock: update"
           title: "flake.lock: update"
           body: |
