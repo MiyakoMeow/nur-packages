@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   prepare:
@@ -91,7 +92,7 @@ jobs:
           }
           # 创建唯一分支名（可根据 group 优化命名，但此处保持兼容）
           timestamp=$(date +%s)
-          branch_name="update/$PACKAGE-$timestamp"
+          branch_name="update/${{ matrix.package }}-$timestamp-$GITHUB_RUN_ID"
           append_github_output "branch_name" "$branch_name"
           echo "分支名称: $branch_name"
 
