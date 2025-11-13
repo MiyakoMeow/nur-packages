@@ -5,13 +5,12 @@
   fetchurl,
   nix-update-script,
 }:
-
-stdenv.mkDerivation rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "continue-cli";
   version = "1.5.11";
 
   src = fetchurl {
-    url = "https://registry.npmjs.org/@continuedev/cli/-/cli-${version}.tgz";
+    url = "https://registry.npmjs.org/@continuedev/cli/-/cli-${finalAttrs.version}.tgz";
     hash = "sha256-mngKWY7LzekFqM+hRZAj/PbxlHzESnFM+6bMU2yOMF4=";
   };
 
@@ -50,4 +49,4 @@ stdenv.mkDerivation rec {
     mainProgram = "cn";
     platforms = lib.platforms.all;
   };
-}
+})
