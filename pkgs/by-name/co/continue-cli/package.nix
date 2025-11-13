@@ -24,18 +24,22 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    # 安装包到 lib 目录
-    mkdir -p $out/lib/node_modules/@continuedev
-    mv $out/lib/package $out/lib/node_modules/@continuedev/cli
+        # 安装包到 lib 目录
+        mkdir -p $out/lib/node_modules/@continuedev
+        mv $out/lib/package $out/lib/node_modules/@continuedev/cli
 
-    # 创建二进制文件包装脚本
-    mkdir -p $out/bin
-    cat > $out/bin/cn <<EOF
+        # 创建二进制文件包装脚本
+        mkdir -p $out/bin
+        cat > $out/bin/cn <<EOF
     #!/bin/sh
     exec ${nodejs}/bin/node $out/lib/node_modules/@continuedev/cli/dist/cn.js "\$@"
     EOF
-    chmod +x $out/bin/cn
+        chmod +x $out/bin/cn
   '';
+
+  passthru = {
+    updateScript = nix-update-script { };
+  };
 
   meta = {
     description = "Continue CLI";
