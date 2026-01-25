@@ -102,7 +102,8 @@ for item in "$USER_DATA"/*; do
   [ "$name" = "mBMplay.exe.config" ] && continue
   [ -e "$RUNTIME_DIR/$name" ] && rm -rf "$RUNTIME_DIR/$name"
   if [ -d "$item" ]; then
-    ln -sfT "$item" "$RUNTIME_DIR/$name"
+    # macOS 不支持 ln -sfT，使用 -n 替代
+    ln -sfn "$item" "$RUNTIME_DIR/$name"
   else
     ln -sf "$item" "$RUNTIME_DIR/$name"
   fi
