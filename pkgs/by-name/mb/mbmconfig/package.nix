@@ -57,7 +57,7 @@ stdenvNoCC.mkDerivation rec {
       name = pname;
       desktopName = "mBMconfig";
       exec = pname;
-      comment = "mBMplay GUI configuration tool (runs via Wine)";
+      comment = "mBMconfig - GUI configuration tool for mBMplay (runs via Wine)";
       categories = [
         "AudioVideo"
         "Audio"
