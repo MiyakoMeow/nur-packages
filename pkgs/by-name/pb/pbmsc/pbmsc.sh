@@ -47,6 +47,20 @@ export WINEDLLOVERRIDES="mshtml="
 RUNTIME_DIR=$(mktemp -d -t pbmsc.XXXXXX)
 
 cleanup() {
+  # 同步运行时中新增的文件和目录到用户数据
+  find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d $'\0' item; do
+    name="$(basename "$item")"
+    base="${item##*/}"
+    if [ -f "$item" ]; then
+      if [ ! -f "$APP_DIR/$base" ]; then
+        cp -f "$item" "$USER_DATA/" 2>/dev/null || true
+      fi
+    elif [ -d "$item" ]; then
+      if [ "$name" != "wineprefix" ] && [ ! -d "$USER_DATA/$name" ]; then
+        cp -r --no-preserve=all "$item" "$USER_DATA/$name" 2>/dev/null || true
+      fi
+    fi
+  done
   rm -rf "$RUNTIME_DIR"
 }
 trap cleanup EXIT
@@ -61,14 +75,12 @@ if [ -f "$APP_DIR/pBMSC.exe.config" ]; then
     rm -f "$USER_DATA/pBMSC.exe.config"
     cp "$APP_DIR/pBMSC.exe.config" "$USER_DATA/pBMSC.exe.config"
   fi
-  cp -f "$USER_DATA/pBMSC.exe.config" "$RUNTIME_DIR/pBMSC.exe.config"
 fi
 
 # 将用户数据目录中的文件和目录链接到运行时目录
 for item in "$USER_DATA"/*; do
   [ -e "$item" ] || continue
   name="$(basename "$item")"
-  [ "$name" = "pBMSC.exe.config" ] && continue
   [ -e "$RUNTIME_DIR/$name" ] && rm -rf "$RUNTIME_DIR/$name"
   if [ -d "$item" ]; then
     ln -sfT "$item" "$RUNTIME_DIR/$name"
