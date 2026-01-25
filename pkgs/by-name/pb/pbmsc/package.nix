@@ -44,8 +44,8 @@ stdenvNoCC.mkDerivation rec {
 
      install -Dm755 ${./pbmsc.sh} $out/bin/pbmsc
      substituteInPlace $out/bin/pbmsc \
-       --replace "@out@" "$out" \
-       --replace "@wineWow64Packages@" "${wineWow64Packages.full}"
+       --replace-fail "@out@" "$out" \
+       --replace-fail "@wineWow64Packages@" "${wineWow64Packages.full}"
 
       copyDesktopItems
   '';
