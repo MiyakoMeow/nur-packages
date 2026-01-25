@@ -68,4 +68,4 @@ for item in "$USER_DATA"/*; do
 done
 
 cd "$RUNTIME_DIR"
-exec wine "mBMplay.exe" "$@"
+wine "mBMplay.exe" "$@"
