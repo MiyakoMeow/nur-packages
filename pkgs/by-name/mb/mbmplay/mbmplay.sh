@@ -6,7 +6,7 @@ set -euo pipefail
 
 APP_ROOT="@out@/share/mbmplay"
 APP_DIR="$APP_ROOT/mBMplay"
-WINE_PACKAGE="@wine64Packages@"
+WINE_PACKAGE="@wineWow64Packages@"
 
 BASE_DATA_DIR="${XDG_DATA_HOME:-"$HOME/.local/share"}"
 USER_DATA="$BASE_DATA_DIR/mbmplay"
