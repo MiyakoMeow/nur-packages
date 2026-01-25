@@ -3,6 +3,11 @@ set -euo pipefail
 
 # mBMplay 启动脚本
 # 使用 Wine 运行 mBMplay，支持 .NET 应用
+#
+# 文件打开提示：Wine文件对话框无法默认显示隐藏文件。
+# 建议通过以下方式打开文件：
+# 1. 直接从系统文件管理器拖拽文件到程序窗口
+# 2. 在文件对话框中手动点击"显示隐藏文件"按钮
 
 APP_ROOT="@out@/share/mbmplay"
 APP_DIR="$APP_ROOT/mBMplay"
