@@ -80,7 +80,7 @@ stdenvNoCC.mkDerivation rec {
     homepage = "https://mistyblue.info";
     license = licenses.mit;
     maintainers = [ ];
-    platforms = with lib.platforms; x86_64;
+    platforms = wineWowPackages.full.meta.platforms;
     mainProgram = pname;
   };
 }
