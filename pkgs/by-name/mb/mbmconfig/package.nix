@@ -4,7 +4,7 @@
 , makeDesktopItem
 , copyDesktopItems
 , p7zip
-, wine64Packages
+, wineWow64Packages
 ,
 }:
 
@@ -45,7 +45,7 @@ stdenvNoCC.mkDerivation rec {
     install -Dm755 ${./mbmconfig.sh} $out/bin/mbmconfig
     substituteInPlace $out/bin/mbmconfig \
       --replace "@out@" "$out" \
-      --replace "@wine64Packages@" "${wine64Packages.full}"
+      --replace "@wineWow64Packages@" "${wineWow64Packages.full}"
 
     # 安装桌面文件
     copyDesktopItems
@@ -75,14 +75,14 @@ stdenvNoCC.mkDerivation rec {
     })
   ];
 
-  propagatedBuildInputs = [ wine64Packages.full ];
+  propagatedBuildInputs = [ wineWow64Packages.full ];
 
   meta = with lib; {
     description = "mBMconfig - GUI configuration tool for mBMplay (runs via Wine)";
     homepage = "https://mistyblue.info";
     license = licenses.mit;
     maintainers = [ ];
-    platforms = wine64Packages.full.meta.platforms;
+    platforms = wineWow64Packages.full.meta.platforms;
     mainProgram = pname;
   };
 }
