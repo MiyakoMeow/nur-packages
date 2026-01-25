@@ -35,7 +35,7 @@ export WINEDLLOVERRIDES="mscoree,mshtml=d"
 
 # 初始化前缀并安装 wine-mono（仅在未安装时执行）
 MONO_DIR="${WINE_PACKAGE}/share/wine/mono"
-MONO_MSI=$(ls "$MONO_DIR"/wine-mono-*.msi 2>/dev/null | head -n1 || true)
+MONO_MSI=$(find "$MONO_DIR" -maxdepth 1 -name "wine-mono-*.msi" -type f -print -quit 2>/dev/null || true)
 if [ -n "$MONO_MSI" ] && [ ! -d "$WINEPREFIX/drive_c/windows/mono" ]; then
   wine msiexec /i "$MONO_MSI" /qn 2>/dev/null || true
 fi
