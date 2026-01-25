@@ -44,8 +44,8 @@ stdenvNoCC.mkDerivation rec {
 
     install -Dm755 ${./mbmplay.sh} $out/bin/mbmplay
     substituteInPlace $out/bin/mbmplay \
-      --replace "@out@" "$out" \
-      --replace "@wineWow64Packages@" "${wineWow64Packages.full}"
+      --replace-fail "@out@" "$out" \
+      --replace-fail "@wineWow64Packages@" "${wineWow64Packages.full}"
 
     # 安装桌面文件
     copyDesktopItems
