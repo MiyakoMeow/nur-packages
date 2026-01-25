@@ -50,9 +50,8 @@ cleanup() {
   # 同步运行时中新增的文件和目录到用户数据
   find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d $'\0' item; do
     name="$(basename "$item")"
-    base="${item##*/}"
     if [ -f "$item" ]; then
-      if [ ! -f "$APP_DIR/$base" ]; then
+      if [ ! -f "$APP_DIR/$name" ]; then
         cp -f "$item" "$USER_DATA/" 2>/dev/null || true
       fi
     elif [ -d "$item" ]; then
