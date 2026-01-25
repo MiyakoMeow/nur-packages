@@ -61,20 +61,20 @@ if [ -f "$APP_DIR/mBMplay.exe.config" ]; then
 fi
 
 cleanup() {
-  local EXCLUDE_PATTERNS="*.tmp *.temp *.cache *.log *.bak *.old *~ *.lock *.swp"
-  
+  local EXCLUDE_PATTERNS=("*.tmp" "*.temp" "*.cache" "*.log" "*.bak" "*.old" "*~" "*.lock" "*.swp")
+
   # 同步运行时中新增的文件和目录到用户数据
   find "$RUNTIME_DIR" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d $'\0' item; do
     name="$(basename "$item")"
     skip=false
-    
+
     # 跳过临时和不需要持久化的文件
-    for pattern in $EXCLUDE_PATTERNS; do
+    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
       case "$name" in
         $pattern) skip=true; break ;;
       esac
     done
-    
+
     [ "$skip" = true ] && continue
     
     if [ -f "$item" ]; then
