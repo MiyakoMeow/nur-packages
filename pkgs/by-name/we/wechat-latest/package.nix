@@ -9,7 +9,24 @@
   zlib,
   libgcc,
   # X11 相关
-  xorg,
+  libx11,
+  libxext,
+  libxrender,
+  libxrandr,
+  libxinerama,
+  libxcursor,
+  libxfixes,
+  libxcomposite,
+  libxdamage,
+  libxtst,
+  libxi,
+  libxcb,
+  libxcb-util,
+  libxcb-cursor,
+  libxcb-image,
+  libxcb-keysyms,
+  libxcb-render-util,
+  libxcb-wm,
   # 网络、加密和认证
   nss,
   nspr,
@@ -61,24 +78,24 @@ stdenv.mkDerivation rec {
     libgcc
 
     # X11 相关
-    xorg.libX11
-    xorg.libXext
-    xorg.libXrender
-    xorg.libXrandr
-    xorg.libXinerama
-    xorg.libXcursor
-    xorg.libXfixes
-    xorg.libXcomposite
-    xorg.libXdamage
-    xorg.libXtst
-    xorg.libXi
-    xorg.libxcb
-    xorg.xcbutil
-    xorg.xcbutilcursor
-    xorg.xcbutilimage
-    xorg.xcbutilkeysyms
-    xorg.xcbutilrenderutil
-    xorg.xcbutilwm
+    libx11
+    libxext
+    libxrender
+    libxrandr
+    libxinerama
+    libxcursor
+    libxfixes
+    libxcomposite
+    libxdamage
+    libxtst
+    libxi
+    libxcb
+    libxcb-util
+    libxcb-cursor
+    libxcb-image
+    libxcb-keysyms
+    libxcb-render-util
+    libxcb-wm
 
     # 网络、加密和认证
     nss
