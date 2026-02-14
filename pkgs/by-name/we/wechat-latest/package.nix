@@ -149,4 +149,12 @@ stdenv.mkDerivation rec {
     platforms = [ "x86_64-linux" ];
     maintainers = [ ];
   };
+
+  passthru.updateScript = {
+    command = [
+      "bash"
+      "${toString ./update.sh}"
+    ];
+    group = "we.wechat-latest";
+  };
 }
