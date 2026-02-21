@@ -1,15 +1,7 @@
 {
   lib,
   stdenv,
-  gtk3,
-  webkitgtk_4_1,
-  pkg-config,
-  libsoup_3,
-  glib-networking,
-  gsettings-desktop-schemas,
-  xorg,
-  at-spi2-core,
-  wails,
+  pkgs,
   buildGoModule,
   fetchFromGitHub,
   fetchNpmDeps,
@@ -44,39 +36,42 @@ buildGoModule (finalAttrs: {
   };
 
   nativeBuildInputs = [
-    wails
-    pkg-config
+    pkgs.wails
+    pkgs.pkg-config
     copyDesktopItems
     npmHooks.npmConfigHook
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
-    gsettings-desktop-schemas
+    pkgs.gsettings-desktop-schemas
     autoPatchelfHook
     wrapGAppsHook3
   ];
 
   buildInputs =
     [ ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [
-      webkitgtk_4_1
-      gtk3
-      libsoup_3
-      glib-networking
-      xorg.libX11
-      xorg.libXcursor
-      xorg.libXrandr
-      xorg.libXinerama
-      xorg.libXi
-      xorg.libXxf86vm
-      xorg.libXfixes
-      xorg.libXext
-      xorg.libXcomposite
-      xorg.libXdamage
-      xorg.libXrender
-      xorg.xvfb
-      xorg.xorgserver
-      at-spi2-core
-    ];
+    ++ lib.optionals stdenv.hostPlatform.isLinux (
+      with pkgs;
+      [
+        webkitgtk_4_1
+        gtk3
+        libsoup_3
+        glib-networking
+        libx11
+        libxcursor
+        libxrandr
+        libxinerama
+        libxi
+        libxxf86vm
+        libxfixes
+        libxext
+        libxcomposite
+        libxdamage
+        libxrender
+        xvfb
+        xorg-server
+        at-spi2-core
+      ]
+    );
 
   buildPhase = ''
     runHook preBuild
