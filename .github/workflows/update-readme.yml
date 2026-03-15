@@ -55,8 +55,24 @@ jobs:
             echo "has_update=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check for existing PR
+        id: check-pr
+        run: |
+          EXISTING_PR=$(gh pr list --state open \
+            --json number,headRefName \
+            -q '.[] | select(.headRefName | startswith("docs/update-readme-")) | .number' \
+            2>/dev/null || echo "")
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "has_existing_pr=true" >> $GITHUB_OUTPUT
+            echo "existing_pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "发现已存在的 PR #$EXISTING_PR，跳过创建"
+          else
+            echo "has_existing_pr=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Pull Request
-        if: steps.update.outputs.has_update == 'true'
+        if: steps.update.outputs.has_update == 'true' && steps.check-pr.outputs.has_existing_pr != 'true'
         id: create-pull-request
         uses: peter-evans/create-pull-request@v8
         with:
