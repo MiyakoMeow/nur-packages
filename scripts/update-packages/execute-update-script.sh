@@ -13,8 +13,9 @@ fi
 PACKAGE="$1"
 WORKDIR="${GITHUB_WORKSPACE:-$PWD}"
 
-# Helper: 向 GitHub Actions 的 $GITHUB_OUTPUT 追加输出
+# Helper: 向 GitHub Actions 的 $GITHUB_OUTPUT 追加输出（本地调试时退回到 stdout）
 append_github_output() {
+  # $1 = key, $2 = value
   if [ -n "${GITHUB_OUTPUT:-}" ]; then
     printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"
   else
@@ -43,13 +44,15 @@ cleanup_worktree() {
 git config --global user.email "actions@github.com"
 git config --global user.name "GitHub Actions"
 
-# 传入绝对 flake 引用
+# 传入绝对 flake 引用，避免内置 '.' 被拒绝
 export FLAKE_REF="path:$WORKDIR"
 
-# 准备环境变量
+# 准备执行环境变量（兼容不同脚本类型）
 export NIXPKGS_ALLOW_UNFREE=1
 export NIXPKGS_ALLOW_BROKEN=1
 export NIXPKGS_ALLOW_INSECURE=1
+
+# 使用临时 HOME 目录以防脚本写入 HOME
 export HOME="${HOME:-/tmp}"
 
 # 创建临时 worktree
@@ -153,6 +156,7 @@ case "$script_type" in
     ;;
   "string")
     command_str=$(echo "$script_json" | jq -r '.')
+    # 将字符串拆分为数组以便重写
     read -r -a script_array <<< "$command_str"
     execute_command_array "${script_array[@]}"
     ;;
