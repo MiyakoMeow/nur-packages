@@ -29,7 +29,8 @@ create_worktree() {
   wt_dir=$(mktemp -d)
   local branch_name="update-$(date +%s)-$$"
   
-  git worktree add -b "$branch_name" "$wt_dir" HEAD
+  # 重定向 stderr 到 /dev/null，避免 "HEAD is now at ..." 消息干扰输出
+  git worktree add -b "$branch_name" "$wt_dir" HEAD 2>/dev/null
   echo "$wt_dir|$branch_name"
 }
 
@@ -82,7 +83,7 @@ script_json=$(nix eval --impure --json --expr "
     else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
     else if (pkg ? updateScript) then pkg.updateScript
     else throw \"no updateScript\"
-" --argstr FLAKE_REF "$WT_DIR")
+" --argstr FLAKE_REF "$WT_DIR" 2>/dev/null)
 
 script_type=$(echo "$script_json" | jq -r 'type')
 
