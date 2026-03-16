@@ -57,10 +57,129 @@ script_json=$(nix eval --impure --json --expr "
 ")
 script_type=$(echo "$script_json" | jq -r 'type')
 
+# 从 store 路径转换为本地路径
+convert_store_path_to_local() {
+  local store_path="$1"
+  local workdir="${GITHUB_WORKSPACE:-$PWD}"
+  
+  if [[ "$store_path" =~ ^/nix/store/[a-z0-9]+-(.+)$ ]]; then
+    local filename="${BASH_REMATCH[1]}"
+    local local_path
+    # 尝试在当前工作目录中查找同名文件
+    local_path=$(find "$workdir" -name "$filename" -type f 2>/dev/null | head -n1)
+    if [ -n "$local_path" ]; then
+      echo "$local_path"
+      return 0
+    fi
+  fi
+  echo "$store_path"
+  return 1
+}
+
+# 执行自定义 bash 脚本并处理 JSON 输出
+execute_custom_script() {
+  local script_array=("$@")
+  local cmd="${script_array[0]}"
+  
+  # 检查是否是 bash 脚本
+  if [[ "$cmd" != "bash" ]]; then
+    return 1
+  fi
+  
+  # 查找 .sh 脚本路径
+  local script_path=""
+  for arg in "${script_array[@]}"; do
+    if [[ "$arg" =~ \.sh$ ]] || [[ "$arg" == *"update.sh" ]]; then
+      script_path="$arg"
+      break
+    fi
+  done
+  
+  if [ -z "$script_path" ]; then
+    return 1
+  fi
+  
+  # 尝试转换为本地路径
+  local local_path
+  if convert_store_path_to_local "$script_path" >/dev/null 2>&1; then
+    local_path=$(convert_store_path_to_local "$script_path")
+    echo "检测到自定义更新脚本: $script_path -> $local_path"
+    
+    # 替换为本地路径
+    local new_array=()
+    for arg in "${script_array[@]}"; do
+      if [ "$arg" = "$script_path" ]; then
+        new_array+=("$local_path")
+      else
+        new_array+=("$arg")
+      fi
+    done
+    
+    # 设置环境变量
+    export UPDATE_NIX_ATTR_PATH="$PACKAGE"
+    
+    # 执行脚本并捕获输出
+    echo "执行更新脚本: ${new_array[@]}"
+    local output
+    output=$("${new_array[@]}" 2>&1) || true
+    local exit_code=$?
+    
+    echo "$output"
+    
+    # 检查是否是 JSON 输出
+    if echo "$output" | jq -e . >/dev/null 2>&1; then
+      echo "检测到 JSON 输出，处理更新..."
+      
+      # 解析 JSON 获取要更新的文件
+      local files
+      files=$(echo "$output" | jq -r '.[0].files[]?' 2>/dev/null || echo "")
+      
+      if [ -n "$files" ]; then
+        for file in $files; do
+          # 获取新版本和新 hash
+          local new_version new_sha256
+          new_version=$(echo "$output" | jq -r '.[0].newVersion' 2>/dev/null || echo "")
+          new_sha256=$(echo "$output" | jq -r '.[0].newSha256' 2>/dev/null || echo "")
+          
+          if [ -f "$file" ] && [ -n "$new_version" ] && [ -n "$new_sha256" ]; then
+            echo "更新文件: $file"
+            echo "  version: $new_version"
+            echo "  sha256: $new_sha256"
+            
+            # 更新 version 和 sha256
+            sed -i -E \
+              -e "s|(version = \")[0-9]+\.[0-9]+(\";)|\1${new_version}\2|" \
+              -e "s|(sha256 = \")[^\"]+(\";)|\1${new_sha256}\2|" \
+              "$file"
+            echo "已更新 $file"
+          fi
+        done
+      fi
+    fi
+    
+    if [ $exit_code -ne 0 ] && [ -n "$output" ]; then
+      # 检查是否是 "无需更新" 的情况
+      if echo "$output" | grep -q "无需更新\|no changes\|already up to date"; then
+        return 0
+      fi
+      return $exit_code
+    fi
+    
+    return 0
+  fi
+  
+  return 1
+}
+
 # 将命令数组重写为使用完整属性路径的 nix-update，并保留标志参数
 execute_command_array() {
   local script_array=("$@")
   local cmd="${script_array[0]}"
+
+  # 尝试执行自定义 bash 脚本（默认行为）
+  if execute_custom_script "${script_array[@]}"; then
+    return
+  fi
 
   # 将 store 路径的 nix-update 规范化为 "nix-update"
   if [[ "$cmd" =~ ^/nix/store/.*/bin/nix-update$ ]]; then
