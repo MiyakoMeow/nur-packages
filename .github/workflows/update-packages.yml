@@ -88,7 +88,7 @@ jobs:
 
       - name: Install required tools
         run: |
-          nix profile install nixpkgs#python313 nixpkgs#python313Packages.requests nixpkgs#python313Packages.beautifulsoup4 nixpkgs#nix-update nixpkgs#gh
+          nix profile install nixpkgs#python313 nixpkgs#python313Packages.requests nixpkgs#python313Packages.beautifulsoup4 nixpkgs#nix-update
 
       - name: Update package
         id: update
