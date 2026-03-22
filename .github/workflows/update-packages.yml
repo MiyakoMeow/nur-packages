@@ -134,22 +134,3 @@ jobs:
             此更新由包的updateScript自动生成
           labels: automated, dependencies
           token: ${{ steps.gen-token.outputs.token }}
-
-      - name: Wait for CI completion
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          PACKAGE='${{ matrix.package }}'
-          scripts/actions/wait-for-actions.sh "$PR_NUMBER" "$PACKAGE"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable Pull Request Automerge
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          PACKAGE='${{ matrix.package }}'
-          echo "启用PR #$PR_NUMBER ($PACKAGE) 的自动合并"
-          gh pr merge "$PR_NUMBER" --auto --squash
-        env:
-          GITHUB_TOKEN: ${{ steps.gen-token.outputs.token }}

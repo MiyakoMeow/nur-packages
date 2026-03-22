@@ -90,20 +90,3 @@ jobs:
             由 GitHub Actions 自动更新 README 的 Package List
           labels: automated, documentation
           token: ${{ steps.gen-token.outputs.token }}
-
-      - name: Wait for CI completion
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          scripts/actions/wait-for-actions.sh "$PR_NUMBER"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable Pull Request Automerge
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          echo "启用 PR #$PR_NUMBER 的自动合并"
-          gh pr merge "$PR_NUMBER" --auto --squash
-        env:
-          GITHUB_TOKEN: ${{ steps.gen-token.outputs.token }}

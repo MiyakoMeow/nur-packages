@@ -78,20 +78,3 @@ jobs:
           labels: |
             automated
             dependencies
-
-      - name: Wait for CI completion
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        run: |
-          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          scripts/actions/wait-for-actions.sh "$PR_NUMBER"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable Pull Request Automerge
-        if: steps.create-pull-request.outputs.pull-request-operation == 'created'
-        env:
-          GITHUB_TOKEN: ${{ steps.gen-token.outputs.token }}
-        run: |
-          PR_NUMBER='${{ steps.create-pull-request.outputs.pull-request-number }}'
-          echo "Enabling auto-merge for PR #$PR_NUMBER"
-          gh pr merge "$PR_NUMBER" --auto --squash
