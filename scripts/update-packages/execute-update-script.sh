@@ -38,11 +38,42 @@ export NIXPKGS_ALLOW_INSECURE=1
 # 使用临时 HOME 目录以防脚本写入 HOME
 export HOME="${HOME:-/tmp}"
 
+# Worktree 隔离：仅在本地执行时启用（GitHub Actions 已有分支隔离）
+USE_WORKTREE=false
+if [ -z "${GITHUB_ACTIONS:-}" ]; then
+  USE_WORKTREE=true
+  WORKTREE_DIR=$(mktemp -d)
+
+  echo "创建 worktree 隔离环境: $WORKTREE_DIR"
+  git worktree add "$WORKTREE_DIR" HEAD --detach 2>/dev/null || {
+    # fallback: 如果 worktree 失败，直接使用主目录
+    echo "警告: worktree 创建失败，将在主目录执行"
+    USE_WORKTREE=false
+    rm -rf "$WORKTREE_DIR"
+  }
+
+  if [ "$USE_WORKTREE" = true ]; then
+    export FLAKE_REF="path:$WORKTREE_DIR"
+    cd "$WORKTREE_DIR"
+  fi
+fi
+
+EXEC_DIR="${WORKTREE_DIR:-$WORKDIR}"
+
 # 注入 UPDATE_NIX_* 环境变量（与 nixpkgs update.py 一致）
 # 临时文件存储 stderr
 nix_stderr=$(mktemp)
 nix_stdout=$(mktemp)
-trap "rm -f '$nix_stderr' '$nix_stdout'" RETURN
+cleanup() {
+  if [ "${USE_WORKTREE:-false}" = true ] && [ -d "${WORKTREE_DIR:-}" ]; then
+    echo "同步变更回工作目录..."
+    rsync -av --exclude='.git' "$WORKTREE_DIR"/ "$WORKDIR"/ 2>/dev/null || true
+    git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true
+    rm -rf "$WORKTREE_DIR"
+  fi
+  rm -f "$nix_stderr" "$nix_stdout"
+}
+trap cleanup EXIT
 
 echo "获取包元信息..."
 pkg_info=$(nix eval --impure --json --expr "
@@ -128,12 +159,12 @@ execute_command_array() {
     new_command+=("$PACKAGE")
 
     echo "执行: ${new_command[@]}"
-    cd "$WORKDIR"
+    cd "$EXEC_DIR"
     "${new_command[@]}"
   else
     # 其他命令直接在当前目录执行
     echo "执行: ${script_array[@]}"
-    cd "$WORKDIR"
+    cd "$EXEC_DIR"
     "${script_array[@]}"
   fi
 }
