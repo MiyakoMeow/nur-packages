@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # find-packages-with-update-script.sh
-# 从 flake 的 legacyPackages 中查找具有 updateScript 的包并去重（优先按 group）
+# 从 flake 的 legacyPackages 中查找具有 updateScript 的包
 #
 # 输出:
 # - 向 GitHub Actions 输出变量 $GITHUB_OUTPUT 写入:
@@ -49,7 +49,7 @@ trap cleanup EXIT
 ALL_PACKAGES_FILE="$TMPDIR/all-packages.txt"
 PACKAGE_LIST_FILE="$TMPDIR/package-list.txt"
 
-# 递归收集 legacyPackages 下具有 updateScript 的派生（含 groups）
+# 递归收集 legacyPackages 下具有 updateScript 的派生
 echo "收集所有候选包属性路径..."
 nix eval --impure --json --expr "
   let
