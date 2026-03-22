@@ -38,12 +38,46 @@ export NIXPKGS_ALLOW_INSECURE=1
 # 使用临时 HOME 目录以防脚本写入 HOME
 export HOME="${HOME:-/tmp}"
 
-echo "获取包 $PACKAGE 的 updateScript"
-
+# 注入 UPDATE_NIX_* 环境变量（与 nixpkgs update.py 一致）
 # 临时文件存储 stderr
 nix_stderr=$(mktemp)
 nix_stdout=$(mktemp)
 trap "rm -f '$nix_stderr' '$nix_stdout'" RETURN
+
+echo "获取包元信息..."
+pkg_info=$(nix eval --impure --json --expr "
+  let
+    f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
+    sys = \"x86_64-linux\";
+    lp = builtins.getAttr sys f.legacyPackages;
+    pkgsN = import <nixpkgs> {};
+    lib = pkgsN.lib;
+    path = lib.strings.splitString \".\" \"${PACKAGE}\";
+    pkg = lib.attrsets.attrByPath path null lp;
+  in
+    if pkg == null then throw \"no pkg\"
+    else {
+      name = pkg.name or \"\";
+      pname = pkg.pname or (lib.getName pkg);
+      version = pkg.version or (lib.getVersion pkg);
+    }
+" 2>"$nix_stderr" || {
+  echo "警告: 无法获取包元信息 (nix eval 失败)"
+  cat "$nix_stderr" >&2
+  echo '{}'
+})
+
+export UPDATE_NIX_NAME=$(echo "$pkg_info" | jq -r '.name // ""')
+export UPDATE_NIX_PNAME=$(echo "$pkg_info" | jq -r '.pname // ""')
+export UPDATE_NIX_OLD_VERSION=$(echo "$pkg_info" | jq -r '.version // ""')
+export UPDATE_NIX_ATTR_PATH="$PACKAGE"
+
+echo "  UPDATE_NIX_NAME=$UPDATE_NIX_NAME"
+echo "  UPDATE_NIX_PNAME=$UPDATE_NIX_PNAME"
+echo "  UPDATE_NIX_OLD_VERSION=$UPDATE_NIX_OLD_VERSION"
+echo "  UPDATE_NIX_ATTR_PATH=$UPDATE_NIX_ATTR_PATH"
+
+echo "获取包 $PACKAGE 的 updateScript"
 
 # 尝试获取 updateScript，捕获输出和错误
 if ! nix eval --impure --json --expr "
