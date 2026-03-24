@@ -32,6 +32,7 @@ jobs:
       - name: Find packages with updateScript
         id: find-packages
         run: |
+          set -euo pipefail
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
           export NIXPKGS_ALLOW_UNFREE=1
 
@@ -99,6 +100,7 @@ jobs:
       - name: Get package metadata
         id: pkg-metadata
         run: |
+          set -euo pipefail
           PACKAGE="${{ matrix.package }}"
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
 
@@ -132,6 +134,7 @@ jobs:
       - name: Get updateScript
         id: get-script
         run: |
+          set -euo pipefail
           PACKAGE="${{ matrix.package }}"
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
 
@@ -176,6 +179,7 @@ jobs:
 
       - name: Execute updateScript
         run: |
+          set -euo pipefail
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
           export NIXPKGS_ALLOW_UNFREE=1
           export NIXPKGS_ALLOW_BROKEN=1
