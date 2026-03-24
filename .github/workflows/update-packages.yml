@@ -89,25 +89,19 @@ jobs:
         run: nix profile install nixpkgs#nix-update
 
       - name: Create update branch
+        id: create-branch
         run: |
           timestamp=$(date +%s)
           branch_name="update/${{ matrix.package }}-$timestamp-$GITHUB_RUN_ID"
           git checkout -b "$branch_name"
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 
-      - name: Update package
+      - name: Get package metadata
+        id: pkg-metadata
         run: |
           PACKAGE="${{ matrix.package }}"
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
-          export NIXPKGS_ALLOW_UNFREE=1
-          export NIXPKGS_ALLOW_BROKEN=1
-          export NIXPKGS_ALLOW_INSECURE=1
-          export UPDATE_NIX_ATTR_PATH="$PACKAGE"
 
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-
-          echo "Getting package metadata for $PACKAGE..."
           pkg_info=$(nix eval --impure --json --expr "
             let
               f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
@@ -126,15 +120,21 @@ jobs:
               }
           ")
 
-          export UPDATE_NIX_NAME=$(echo "$pkg_info" | jq -r '.name // ""')
-          export UPDATE_NIX_PNAME=$(echo "$pkg_info" | jq -r '.pname // ""')
-          export UPDATE_NIX_OLD_VERSION=$(echo "$pkg_info" | jq -r '.version // ""')
+          echo "name=$(echo "$pkg_info" | jq -r '.name // ""')" >> $GITHUB_OUTPUT
+          echo "pname=$(echo "$pkg_info" | jq -r '.pname // ""')" >> $GITHUB_OUTPUT
+          echo "version=$(echo "$pkg_info" | jq -r '.version // ""')" >> $GITHUB_OUTPUT
 
-          echo "  UPDATE_NIX_NAME=$UPDATE_NIX_NAME"
-          echo "  UPDATE_NIX_PNAME=$UPDATE_NIX_PNAME"
-          echo "  UPDATE_NIX_OLD_VERSION=$UPDATE_NIX_OLD_VERSION"
+          echo "Package: ${{ matrix.package }}"
+          echo "  Name: $(echo "$pkg_info" | jq -r '.name // ""')"
+          echo "  Pname: $(echo "$pkg_info" | jq -r '.pname // ""')"
+          echo "  Version: $(echo "$pkg_info" | jq -r '.version // "")"
 
-          echo "Getting updateScript for $PACKAGE..."
+      - name: Get updateScript
+        id: get-script
+        run: |
+          PACKAGE="${{ matrix.package }}"
+          export FLAKE_REF="path:$GITHUB_WORKSPACE"
+
           script_json=$(nix eval --impure --json --expr "
             let
               f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
@@ -151,17 +151,51 @@ jobs:
               else throw \"no updateScript\"
           ")
 
-          script_type=$(echo "$script_json" | jq -r 'type')
+          echo "script=$script_json" >> $GITHUB_OUTPUT
+          echo "type=$(echo "$script_json" | jq -r 'type')" >> $GITHUB_OUTPUT
+
+      - name: Parse updateScript
+        id: parse-script
+        run: |
+          script_json='${{ steps.get-script.outputs.script }}'
+          script_type='${{ steps.get-script.outputs.type }}'
 
           case "$script_type" in
             array)
-              mapfile -t cmd < <(echo "$script_json" | jq -r '.[]')
+              cmd_json=$(echo "$script_json" | jq -c '.')
               ;;
             string)
-              read -r -a cmd <<< "$(echo "$script_json" | jq -r '.')"
+              cmd_json=$(echo "$script_json" | jq -c '. | split(" ")')
               ;;
             object)
               cmd_json=$(echo "$script_json" | jq -c '.command')
+              ;;
+          esac
+
+          echo "cmd=$cmd_json" >> $GITHUB_OUTPUT
+
+      - name: Execute updateScript
+        run: |
+          export FLAKE_REF="path:$GITHUB_WORKSPACE"
+          export NIXPKGS_ALLOW_UNFREE=1
+          export NIXPKGS_ALLOW_BROKEN=1
+          export NIXPKGS_ALLOW_INSECURE=1
+          export UPDATE_NIX_ATTR_PATH="${{ matrix.package }}"
+          export UPDATE_NIX_NAME="${{ steps.pkg-metadata.outputs.name }}"
+          export UPDATE_NIX_PNAME="${{ steps.pkg-metadata.outputs.pname }}"
+          export UPDATE_NIX_OLD_VERSION="${{ steps.pkg-metadata.outputs.version }}"
+
+          cmd_json='${{ steps.parse-script.outputs.cmd }}'
+          cmd_type='${{ steps.get-script.outputs.type }}'
+
+          case "$cmd_type" in
+            array)
+              mapfile -t cmd < <(echo "$cmd_json" | jq -r '.[]')
+              ;;
+            string)
+              read -r -a cmd <<< "$(echo "$cmd_json" | jq -r '.')"
+              ;;
+            object)
               cmd_type=$(echo "$cmd_json" | jq -r 'type')
               if [ "$cmd_type" = "array" ]; then
                 mapfile -t cmd < <(echo "$cmd_json" | jq -r '.[]')
@@ -173,23 +207,6 @@ jobs:
 
           echo "Executing: ${cmd[*]}"
           "${cmd[@]}"
-
-      - name: Check for file updates
-        id: check-updates
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "has_update=true" >> $GITHUB_OUTPUT
-            echo "Changes detected"
-          else
-            echo "has_update=false" >> $GITHUB_OUTPUT
-            echo "No changes"
-          fi
-
-      - name: Commit changes
-        if: steps.check-updates.outputs.has_update == 'true'
-        run: |
-          git add -A
-          git commit -m "${{ matrix.package }}: auto-update by updateScript"
 
       - name: Check for existing PR
         id: check-pr
@@ -203,7 +220,6 @@ jobs:
           if [ -n "$EXISTING_PR" ]; then
             echo "Found existing PR #$EXISTING_PR"
             echo "has_existing_pr=true" >> $GITHUB_OUTPUT
-            echo "existing_pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
           else
             echo "has_existing_pr=false" >> $GITHUB_OUTPUT
           fi
@@ -216,7 +232,7 @@ jobs:
           private_key: ${{ secrets.HELPER_BOT_PRIVATE_KEY }}
 
       - name: Create Pull Request
-        if: steps.check-updates.outputs.has_update == 'true' && steps.check-pr.outputs.has_existing_pr != 'true'
+        if: steps.check-pr.outputs.has_existing_pr != 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           branch: ${{ steps.create-branch.outputs.branch_name }}
