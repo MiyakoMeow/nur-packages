@@ -47,7 +47,7 @@ jobs:
               hasUS = pkg: (pkg ? passthru && pkg.passthru ? updateScript) || (pkg ? updateScript);
               collect = attrs: path:
                 lib.concatMap (name:
-                  let v = attrs.${name}; p = path ++ [ name ]; in
+                  let v = attrs.\${name}; p = path ++ [ name ]; in
                   if lib.isDerivation v then
                     if hasUS v then [ (lib.concatStringsSep \".\" p) ] else []
                   else if lib.isAttrs v then collect v p
