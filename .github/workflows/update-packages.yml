@@ -238,8 +238,8 @@ jobs:
               cmd_array="$cmd"
               ;;
             string)
-              cmd_string=$(echo "$cmd" | jq -r '.')
-              cmd_array=$(echo "$cmd_string" | jq -R -s 'split(" ") | map(gsub("^\\s|\\s$"; "")) | map(select(. != ""))')
+              # 字符串类型代表单个命令，包装成单元素数组
+              cmd_array=$(echo "$cmd" | jq -c '[.]')
               ;;
           esac
 
