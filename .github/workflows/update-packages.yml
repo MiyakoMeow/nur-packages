@@ -104,23 +104,23 @@ jobs:
           PACKAGE="${{ matrix.package }}"
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
 
-          pkg_info=$(nix eval --impure --json --expr "
+          pkg_info=$(nix eval --impure --json --expr '
             let
-              f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
-              sys = \"x86_64-linux\";
+              f = builtins.getFlake (builtins.getEnv "FLAKE_REF");
+              sys = "x86_64-linux";
               lp = builtins.getAttr sys f.legacyPackages;
               pkgsN = import <nixpkgs> {};
               lib = pkgsN.lib;
-              path = lib.strings.splitString \".\" \"${PACKAGE}\";
+              path = lib.strings.splitString "." "'"${PACKAGE}"'";
               pkg = lib.attrsets.attrByPath path null lp;
             in
-              if pkg == null then throw \"no pkg\"
+              if pkg == null then throw "no pkg"
               else {
-                name = pkg.name or \"\";
+                name = pkg.name or "";
                 pname = pkg.pname or (lib.getName pkg);
                 version = pkg.version or (lib.getVersion pkg);
               }
-          ")
+          ')
 
           echo "name=$(echo "$pkg_info" | jq -r '.name // ""')" >> $GITHUB_OUTPUT
           echo "pname=$(echo "$pkg_info" | jq -r '.pname // ""')" >> $GITHUB_OUTPUT
@@ -138,21 +138,21 @@ jobs:
           PACKAGE="${{ matrix.package }}"
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
 
-          script_json=$(nix eval --impure --json --expr "
+          script_json=$(nix eval --impure --json --expr '
             let
-              f = builtins.getFlake (builtins.getEnv \"FLAKE_REF\");
-              sys = \"x86_64-linux\";
+              f = builtins.getFlake (builtins.getEnv "FLAKE_REF");
+              sys = "x86_64-linux";
               lp = builtins.getAttr sys f.legacyPackages;
               pkgsN = import <nixpkgs> {};
               lib = pkgsN.lib;
-              path = lib.strings.splitString \".\" \"${PACKAGE}\";
+              path = lib.strings.splitString "." "'"${PACKAGE}"'";
               pkg = lib.attrsets.attrByPath path null lp;
             in
-              if pkg == null then throw \"no pkg\"
+              if pkg == null then throw "no pkg"
               else if (pkg ? passthru && pkg.passthru ? updateScript) then pkg.passthru.updateScript
               else if (pkg ? updateScript) then pkg.updateScript
-              else throw \"no updateScript\"
-          ")
+              else throw "no updateScript"
+          ')
 
           echo "script=$script_json" >> $GITHUB_OUTPUT
           echo "type=$(echo "$script_json" | jq -r 'type')" >> $GITHUB_OUTPUT
