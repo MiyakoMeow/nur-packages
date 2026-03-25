@@ -47,7 +47,7 @@ jobs:
               hasUS = pkg: (pkg ? passthru && pkg.passthru ? updateScript) || (pkg ? updateScript);
               collect = attrs: path:
                 lib.concatMap (name:
-                  let v = attrs.\${name}; p = path ++ [ name ]; in
+                  let v = attrs.${name}; p = path ++ [ name ]; in
                   if lib.isDerivation v then
                     if hasUS v then [ (lib.concatStringsSep \".\" p) ] else []
                   else if lib.isAttrs v then collect v p
@@ -127,10 +127,13 @@ jobs:
           echo "version=$(echo "$pkg_info" | jq -r '.version // ""')" >> $GITHUB_OUTPUT
 
           echo "Package: ${{ matrix.package }}"
-          echo "  Name: $(echo "$pkg_info" | jq -r '.name // ""')"
-          echo "  Pname: $(echo "$pkg_info" | jq -r '.pname // ""')"
-          echo "  Version: $(echo "$pkg_info" | jq -r '.version // "")"
+          NAME=$(jq -r '.name // ""' <<< "$pkg_info")
+          PNAME=$(jq -r '.pname // ""' <<< "$pkg_info")
+          VERSION=$(jq -r '.version // ""' <<< "$pkg_info")
 
+          echo "  Name: $NAME"
+          echo "  Pname: $PNAME"
+          echo "  Version: $VERSION"
       - name: Get updateScript
         id: get-script
         run: |
