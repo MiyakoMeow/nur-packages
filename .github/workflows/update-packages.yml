@@ -157,6 +157,25 @@ jobs:
           echo "script=$script_json" >> $GITHUB_OUTPUT
           echo "type=$(echo "$script_json" | jq -r 'type')" >> $GITHUB_OUTPUT
 
+      - name: Setup update environment
+        id: setup-env
+        run: |
+          set -euo pipefail
+          PACKAGE="${{ matrix.package }}"
+
+          # 对于 by-name 结构的包，直接推断路径
+          FIRST_TWO=$(echo "$PACKAGE" | head -c 2)
+          SOURCE_DIR="$GITHUB_WORKSPACE/pkgs/by-name/$FIRST_TWO/$PACKAGE"
+
+          # 验证目录存在
+          if [[ -d "$SOURCE_DIR" && -f "$SOURCE_DIR/package.nix" ]]; then
+            echo "UPDATE_NIX_SOURCE_DIR=$SOURCE_DIR" >> $GITHUB_OUTPUT
+            echo "✓ 源码目录: $SOURCE_DIR"
+          else
+            echo "UPDATE_NIX_SOURCE_DIR=" >> $GITHUB_OUTPUT
+            echo "⚠ 无法确定源码目录"
+          fi
+
       - name: Parse updateScript
         id: parse-script
         run: |
@@ -188,6 +207,7 @@ jobs:
           export UPDATE_NIX_NAME="${{ steps.pkg-metadata.outputs.name }}"
           export UPDATE_NIX_PNAME="${{ steps.pkg-metadata.outputs.pname }}"
           export UPDATE_NIX_OLD_VERSION="${{ steps.pkg-metadata.outputs.version }}"
+          export UPDATE_NIX_SOURCE_DIR="${{ steps.setup-env.outputs.UPDATE_NIX_SOURCE_DIR }}"
 
           cmd_json='${{ steps.parse-script.outputs.cmd }}'
           cmd_type='${{ steps.get-script.outputs.type }}'
