@@ -201,27 +201,51 @@ jobs:
             echo "⚠ 无法确定源码目录"
           fi
 
-      - name: Parse updateScript
-        id: parse-script
+      - name: Parse command
+        id: parse-cmd
         run: |
           script_json='${{ steps.get-script.outputs.script }}'
           script_type='${{ steps.get-script.outputs.type }}'
 
+          # 检测类型并提取命令内容
           case "$script_type" in
             array)
-              cmd_json=$(echo "$script_json" | jq -c '.')
+              cmd=$(echo "$script_json" | jq -c '.')
+              cmd_type="array"
               ;;
             string)
-              cmd_json=$(echo "$script_json" | jq -c '. | split(" ")')
+              cmd=$(echo "$script_json" | jq -c '.')
+              cmd_type=$(echo "$script_json" | jq -r 'type')
               ;;
             object)
-              cmd_json=$(echo "$script_json" | jq -c '.command')
+              cmd=$(echo "$script_json" | jq -c '.command')
+              cmd_type=$(echo "$cmd" | jq -r 'type')
               ;;
           esac
 
-          echo "cmd=$cmd_json" >> $GITHUB_OUTPUT
+          echo "cmd=$cmd" >> $GITHUB_OUTPUT
+          echo "cmd_type=$cmd_type" >> $GITHUB_OUTPUT
 
-      - name: Execute updateScript
+      - name: Build command array
+        id: build-cmd-array
+        run: |
+          cmd='${{ steps.parse-cmd.outputs.cmd }}'
+          cmd_type='${{ steps.parse-cmd.outputs.cmd_type }}'
+
+          # 根据类型构建命令数组
+          case "$cmd_type" in
+            array)
+              cmd_array="$cmd"
+              ;;
+            string)
+              cmd_string=$(echo "$cmd" | jq -r '.')
+              cmd_array=$(echo "$cmd_string" | jq -R -s 'split(" ") | map(gsub("^\\s|\\s$"; "")) | map(select(. != ""))')
+              ;;
+          esac
+
+          echo "cmd_array=$cmd_array" >> $GITHUB_OUTPUT
+
+      - name: Execute command
         run: |
           set -euo pipefail
           export FLAKE_REF="path:$GITHUB_WORKSPACE"
@@ -234,25 +258,10 @@ jobs:
           export UPDATE_NIX_OLD_VERSION="${{ steps.pkg-metadata.outputs.version }}"
           export UPDATE_NIX_SOURCE_DIR="${{ steps.setup-env.outputs.UPDATE_NIX_SOURCE_DIR }}"
 
-          cmd_json='${{ steps.parse-script.outputs.cmd }}'
-          cmd_type='${{ steps.get-script.outputs.type }}'
+          cmd_array='${{ steps.build-cmd-array.outputs.cmd_array }}'
 
-          case "$cmd_type" in
-            array)
-              mapfile -t cmd < <(echo "$cmd_json" | jq -r '.[]')
-              ;;
-            string)
-              read -r -a cmd <<< "$(echo "$cmd_json" | jq -r '.')"
-              ;;
-            object)
-              cmd_type=$(echo "$cmd_json" | jq -r 'type')
-              if [ "$cmd_type" = "array" ]; then
-                mapfile -t cmd < <(echo "$cmd_json" | jq -r '.[]')
-              elif [ "$cmd_type" = "string" ]; then
-                read -r -a cmd <<< "$(echo "$cmd_json" | jq -r '.')"
-              fi
-              ;;
-          esac
+          # 将 JSON 数组转换为 bash 数组
+          mapfile -t cmd < <(echo "$cmd_array" | jq -r '.[]')
 
           echo "Executing: ${cmd[*]}"
           "${cmd[@]}"
