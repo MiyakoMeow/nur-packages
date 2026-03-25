@@ -77,6 +77,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get current branch
+        id: get-branch
+        run: |
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          echo "branch=$branch" >> $GITHUB_OUTPUT
+          echo "当前分支: $branch"
+
       - name: Setup Nix
         uses: cachix/install-nix-action@v31
         with:
@@ -297,6 +304,7 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           branch: ${{ steps.create-branch.outputs.branch_name }}
+          base: ${{ steps.get-branch.outputs.branch }}
           title: "${{ matrix.package }}: auto-update by updateScript"
           body: |
             Automated update for ${{ matrix.package }}
