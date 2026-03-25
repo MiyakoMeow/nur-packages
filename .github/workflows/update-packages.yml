@@ -157,6 +157,47 @@ jobs:
           echo "script=$script_json" >> $GITHUB_OUTPUT
           echo "type=$(echo "$script_json" | jq -r 'type')" >> $GITHUB_OUTPUT
 
+      - name: Setup update environment
+        id: setup-env
+        run: |
+          set -euo pipefail
+          export PACKAGE="${{ matrix.package }}"
+          export WORKSPACE="$GITHUB_WORKSPACE"
+
+          # 从 meta.position 获取路径（通用方法）
+          SOURCE_DIR=$(nix eval --impure --raw --expr '
+            let
+              f = builtins.getFlake ("path:" + builtins.getEnv "WORKSPACE");
+              pkg = f.legacyPackages.x86_64-linux.${builtins.getEnv "PACKAGE"};
+              outPath = f.outPath;
+              position = pkg.meta.position or null;
+            in
+              if position == null then
+                "null"
+              else
+                let
+                  parts = builtins.match "([^\"]+):([0-9]+)" position;
+                  file = builtins.elemAt parts 0;
+                in
+                  if builtins.substring 0 1 file == "/" then
+                    let
+                      relPath = builtins.substring (builtins.stringLength outPath + 1) (builtins.stringLength file) file;
+                      dirPath = builtins.dirOf (builtins.getEnv "WORKSPACE" + "/" + relPath);
+                    in
+                      dirPath
+                  else
+                    "null"
+          ' 2>&1 | tail -1)
+
+          # 验证目录
+          if [[ -n "$SOURCE_DIR" && "$SOURCE_DIR" != "null" && -d "$SOURCE_DIR" ]]; then
+            echo "UPDATE_NIX_SOURCE_DIR=$SOURCE_DIR" >> $GITHUB_OUTPUT
+            echo "✓ 源码目录: $SOURCE_DIR"
+          else
+            echo "UPDATE_NIX_SOURCE_DIR=" >> $GITHUB_OUTPUT
+            echo "⚠ 无法确定源码目录"
+          fi
+
       - name: Parse updateScript
         id: parse-script
         run: |
@@ -188,6 +229,7 @@ jobs:
           export UPDATE_NIX_NAME="${{ steps.pkg-metadata.outputs.name }}"
           export UPDATE_NIX_PNAME="${{ steps.pkg-metadata.outputs.pname }}"
           export UPDATE_NIX_OLD_VERSION="${{ steps.pkg-metadata.outputs.version }}"
+          export UPDATE_NIX_SOURCE_DIR="${{ steps.setup-env.outputs.UPDATE_NIX_SOURCE_DIR }}"
 
           cmd_json='${{ steps.parse-script.outputs.cmd }}'
           cmd_type='${{ steps.get-script.outputs.type }}'
