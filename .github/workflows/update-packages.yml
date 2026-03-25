@@ -168,29 +168,32 @@ jobs:
           export WORKSPACE="$GITHUB_WORKSPACE"
 
           # 从 meta.position 获取路径（通用方法）
-          SOURCE_DIR=$(nix eval --impure --raw --expr '
-            let
-              f = builtins.getFlake ("path:" + builtins.getEnv "WORKSPACE");
-              pkg = f.legacyPackages.x86_64-linux.${builtins.getEnv "PACKAGE"};
-              outPath = f.outPath;
-              position = pkg.meta.position or null;
-            in
-              if position == null then
-                "null"
-              else
-                let
-                  parts = builtins.match "([^\"]+):([0-9]+)" position;
-                  file = builtins.elemAt parts 0;
-                in
-                  if builtins.substring 0 1 file == "/" then
-                    let
-                      relPath = builtins.substring (builtins.stringLength outPath + 1) (builtins.stringLength file) file;
-                      dirPath = builtins.dirOf (builtins.getEnv "WORKSPACE" + "/" + relPath);
-                    in
-                      dirPath
-                  else
-                    "null"
-          ' 2>&1 | tail -1)
+          # 注意：SOURCE_DIR 是可选的，失败时不影响后续流程
+          SOURCE_DIR=$(
+            nix eval --impure --raw --expr '
+              let
+                f = builtins.getFlake ("path:" + builtins.getEnv "WORKSPACE");
+                pkg = f.legacyPackages.x86_64-linux.${builtins.getEnv "PACKAGE"};
+                outPath = f.outPath;
+                position = pkg.meta.position or null;
+              in
+                if position == null then
+                  "null"
+                else
+                  let
+                    parts = builtins.match "([^\"]+):([0-9]+)" position;
+                    file = builtins.elemAt parts 0;
+                  in
+                    if builtins.substring 0 1 file == "/" then
+                      let
+                        relPath = builtins.substring (builtins.stringLength outPath + 1) (builtins.stringLength file) file;
+                        dirPath = builtins.dirOf (builtins.getEnv "WORKSPACE" + "/" + relPath);
+                      in
+                        dirPath
+                    else
+                      "null"
+            ' 2>/dev/null || echo "null"
+          )
 
           # 验证目录
           if [[ -n "$SOURCE_DIR" && "$SOURCE_DIR" != "null" && -d "$SOURCE_DIR" ]]; then
@@ -198,7 +201,7 @@ jobs:
             echo "✓ 源码目录: $SOURCE_DIR"
           else
             echo "UPDATE_NIX_SOURCE_DIR=" >> $GITHUB_OUTPUT
-            echo "⚠ 无法确定源码目录"
+            echo "⚠ 无法确定源码目录（包可能没有 meta.position 或路径无效）"
           fi
 
       - name: Parse command
