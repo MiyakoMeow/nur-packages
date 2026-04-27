@@ -41,7 +41,9 @@ jobs:
         run: nix eval --impure --raw --expr "(import (builtins.getFlake \"path:${PWD}\").inputs.nixpkgs {}).lib.version"
 
       - name: Flake check
-        run: nix flake check --show-trace
+        run: nix flake check --show-trace --impure
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
 
       - name: Check formatting
         run: nix fmt -- --fail-on-change
