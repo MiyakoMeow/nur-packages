@@ -35,7 +35,11 @@
       filterDerivations =
         attrs:
         nixpkgs.lib.filterAttrs (name: value: nixpkgs.lib.isDerivation value) (
-          builtins.removeAttrs attrs [ "lib" "modules" "overlays" ]
+          builtins.removeAttrs attrs [
+            "lib"
+            "modules"
+            "overlays"
+          ]
         );
 
       # 为所有系统生成格式化工具
