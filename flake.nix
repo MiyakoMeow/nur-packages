@@ -32,6 +32,12 @@
     let
       forAllSystems = nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed;
 
+      filterDerivations =
+        attrs:
+        nixpkgs.lib.filterAttrs (name: value: nixpkgs.lib.isDerivation value) (
+          builtins.removeAttrs attrs [ "lib" "modules" "overlays" ]
+        );
+
       # 为所有系统生成格式化工具
       formatterForAllSystems = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
     in
@@ -54,7 +60,7 @@
         }
       );
 
-      packages = forAllSystems (system: self.legacyPackages.${system});
+      packages = forAllSystems (system: filterDerivations self.legacyPackages.${system});
 
       # 可选：添加开发环境
       devShells = forAllSystems (system: {
