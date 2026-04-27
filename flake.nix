@@ -76,17 +76,22 @@
       });
 
       # 可选：添加检查
-      checks = forAllSystems (system: {
-        format-check =
-          nixpkgs.legacyPackages.${system}.runCommand "format-check"
-            {
-              nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.nixfmt-tree ];
-            }
-            ''
-              # 检查所有 .nix 文件是否格式正确
-              find ${self} -name "*.nix" -exec nixfmt --check {} +
-              touch $out
-            '';
-      });
+      checks = forAllSystems (
+        system:
+        let
+          pkgs' = nixpkgs.legacyPackages.${system};
+        in
+        {
+          format-check =
+            pkgs'.runCommand "format-check"
+              {
+                nativeBuildInputs = [ pkgs'.nixfmt-tree ];
+              }
+              ''
+                find ${self} -name "*.nix" -exec ${pkgs'.lib.getExe pkgs'.nixfmt} --check {} +
+                touch $out
+              '';
+        }
+      );
     };
 }
